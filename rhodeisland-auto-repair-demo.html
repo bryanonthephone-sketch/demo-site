@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhode Island Auto Repair - Auto Repair in West Warwick, RI</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #D72B2B;
+    --dark: #0f0f0f;
+    --dark2: #1a1a1a;
+    --dark3: #252525;
+    --mid: #3a3a3a;
+    --light: #f5f5f0;
+    --muted: #999;
+    --white: #ffffff;
+    --accent: #e8c84a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Barlow', sans-serif; background: var(--dark); color: var(--white); overflow-x: hidden; }
+
+  .topbar { background: var(--red); padding: 10px 40px; display: flex; justify-content: space-between; align-items: center; font-family: 'Barlow Condensed', sans-serif; font-size: 15px; letter-spacing: 0.03em; }
+  .topbar a { color: var(--white); text-decoration: none; font-weight: 600; }
+  .topbar-right { display: flex; gap: 30px; align-items: center; }
+
+  nav { background: var(--dark2); padding: 0 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--red); position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--white); text-decoration: none; padding: 18px 0; letter-spacing: -0.5px; }
+  .logo span { color: var(--red); }
+  nav ul { list-style: none; display: flex; gap: 4px; }
+  nav ul li a { display: block; padding: 22px 16px; color: #ccc; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; transition: color 0.2s; border-bottom: 3px solid transparent; margin-bottom: -3px; }
+  nav ul li a:hover { color: var(--white); border-bottom-color: var(--red); }
+  .nav-cta { background: var(--red); color: var(--white) !important; padding: 12px 22px !important; border-radius: 3px; margin-left: 10px; border-bottom: none !important; }
+  .nav-cta:hover { background: #b52020; }
+
+  .hero { position: relative; min-height: 560px; display: flex; align-items: center; overflow: hidden; background: var(--dark3); }
+  .hero-bg { position: absolute; inset: 0; background: linear-gradient(105deg, rgba(215,43,43,0.18) 0%, transparent 50%), repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(255,255,255,0.012) 40px, rgba(255,255,255,0.012) 41px); }
+  .hero-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--red); }
+  .hero-content { position: relative; z-index: 2; padding: 80px 40px 80px 60px; max-width: 700px; }
+  .hero-eyebrow { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .hero-eyebrow::before { content: ''; display: inline-block; width: 30px; height: 2px; background: var(--red); }
+  h1 { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(48px, 7vw, 82px); font-weight: 900; line-height: 0.95; text-transform: uppercase; letter-spacing: -1px; margin-bottom: 24px; }
+  h1 em { font-style: normal; color: var(--red); display: block; }
+  .hero-sub { font-size: 17px; color: #bbb; line-height: 1.6; max-width: 500px; margin-bottom: 36px; font-weight: 300; }
+  .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn-primary { background: var(--red); color: var(--white); padding: 16px 32px; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s, transform 0.1s; display: inline-block; }
+  .btn-primary:hover { background: #b52020; transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: var(--white); padding: 16px 32px; font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; border: 2px solid var(--mid); cursor: pointer; transition: border-color 0.2s; display: inline-block; }
+  .btn-secondary:hover { border-color: var(--white); }
+
+  .stats-bar { background: var(--red); padding: 24px 40px; display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; }
+  .stat { text-align: center; font-family: 'Barlow Condensed', sans-serif; }
+  .stat-num { font-size: 36px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+  .stat-label { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; margin-top: 4px; }
+
+  section { padding: 80px 40px; }
+  .section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase; color: var(--red); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .section-label::before { content: ''; display: inline-block; width: 24px; height: 2px; background: var(--red); }
+  h2 { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(36px, 5vw, 56px); font-weight: 900; text-transform: uppercase; line-height: 1; letter-spacing: -0.5px; margin-bottom: 16px; }
+
+  .services { background: var(--dark2); }
+  .services-header { text-align: center; margin-bottom: 56px; }
+  .services-header p { color: var(--muted); max-width: 500px; margin: 0 auto; font-size: 16px; }
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 2px; max-width: 1200px; margin: 0 auto; }
+  .service-card { background: var(--dark3); padding: 32px 28px; border-left: 3px solid transparent; transition: border-color 0.2s, background 0.2s; cursor: default; }
+  .service-card:hover { border-left-color: var(--red); background: var(--mid); }
+  .service-icon { font-size: 28px; margin-bottom: 14px; display: block; }
+  .service-card h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .service-card p { font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  .about { background: var(--dark); display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 1200px; margin: 0 auto; }
+  .about-text p { color: #bbb; font-size: 16px; line-height: 1.8; margin-bottom: 20px; font-weight: 300; }
+  .about-text p strong { color: var(--white); font-weight: 600; }
+  .about-visual { background: var(--dark3); border: 1px solid var(--mid); padding: 40px; position: relative; }
+  .about-visual::before { content: ''; position: absolute; top: -3px; left: 30px; right: 30px; height: 3px; background: var(--red); }
+  .checklist { list-style: none; }
+  .checklist li { padding: 14px 0; border-bottom: 1px solid var(--mid); display: flex; align-items: center; gap: 14px; font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 600; letter-spacing: 0.03em; }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '✓'; color: var(--red); font-size: 20px; font-weight: 900; flex-shrink: 0; }
+
+  .reviews { background: var(--dark2); }
+  .reviews-header { text-align: center; margin-bottom: 56px; }
+  .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2px; max-width: 1200px; margin: 0 auto 48px; }
+  .review-card { background: var(--dark3); padding: 32px; position: relative; border-top: 3px solid transparent; transition: border-color 0.2s; }
+  .review-card:hover { border-top-color: var(--red); }
+  .stars { color: var(--accent); font-size: 18px; margin-bottom: 16px; letter-spacing: 2px; }
+  .review-text { font-size: 15px; line-height: 1.7; color: #ccc; font-style: italic; margin-bottom: 20px; font-weight: 300; }
+  .reviewer { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--white); }
+  .google-badge { text-align: center; padding: 24px; background: var(--dark3); border: 1px solid var(--mid); display: flex; align-items: center; gap: 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent); cursor: pointer; transition: background 0.2s; max-width: 340px; margin: 0 auto; }
+  .google-badge:hover { background: var(--mid); }
+
+  .contact-section { background: var(--dark); max-width: 1200px; margin: 0 auto; }
+  .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; margin-top: 48px; }
+  .info-block { margin-bottom: 36px; padding-bottom: 36px; border-bottom: 1px solid var(--mid); }
+  .info-block:last-child { border-bottom: none; }
+  .info-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+  .info-value { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; color: var(--white); text-decoration: none; display: block; }
+  .info-value:hover { color: var(--red); }
+  .info-sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+
+  .form-title { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 28px; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--dark3); border: 1px solid var(--mid); border-radius: 0; color: var(--white); font-family: 'Barlow', sans-serif; font-size: 15px; padding: 14px 16px; outline: none; transition: border-color 0.2s; appearance: none; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--red); }
+  .form-group textarea { height: 100px; resize: vertical; }
+  .form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%23999'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; cursor: pointer; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .submit-btn { width: 100%; background: var(--red); color: var(--white); border: none; padding: 18px; font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; margin-top: 8px; transition: background 0.2s; }
+  .submit-btn:hover { background: #b52020; }
+
+  footer { background: var(--dark2); border-top: 3px solid var(--red); padding: 40px 40px 24px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; max-width: 1200px; margin: 0 auto 36px; }
+  .footer-brand .logo { padding: 0; font-size: 26px; display: inline-block; margin-bottom: 12px; }
+  .footer-brand p { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 280px; }
+  .footer-col h4 { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); margin-bottom: 16px; }
+  .footer-col ul { list-style: none; }
+  .footer-col ul li { margin-bottom: 10px; }
+  .footer-col ul li a { color: var(--muted); text-decoration: none; font-size: 14px; transition: color 0.2s; }
+  .footer-col ul li a:hover { color: var(--white); }
+  .footer-bottom { border-top: 1px solid var(--mid); padding-top: 20px; text-align: center; font-size: 13px; color: var(--muted); max-width: 1200px; margin: 0 auto; }
+
+  .areas { background: var(--dark3); padding: 40px; text-align: center; border-top: 1px solid var(--mid); }
+  .areas-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--red); margin-bottom: 12px; }
+  .areas-list { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; color: #aaa; font-weight: 600; letter-spacing: 0.04em; }
+
+  @media (max-width: 768px) {
+    .topbar { padding: 8px 20px; font-size: 13px; }
+    nav { padding: 0 20px; }
+    nav ul { display: none; }
+    .hero-content { padding: 60px 20px; }
+    section { padding: 60px 20px; }
+    .about { grid-template-columns: 1fr; gap: 40px; }
+    .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+    .stats-bar { gap: 30px; padding: 20px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span>📍 442 Providence St, West Warwick, RI 02893</span>
+  <div class="topbar-right">
+    <span>⏰ Mon–Fri 8am–5pm</span>
+    <a href="tel:+14018280900">📞 (401) 828-0900</a>
+  </div>
+</div>
+
+<nav>
+  <a href="#" class="logo">Rhode Island<span> AUTO</span></a>
+  <ul>
+    <li><a href="#services">Services</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#reviews">Reviews</a></li>
+    <li><a href="#contact" class="nav-cta">Request Service</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-stripe"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">West Warwick, RI — Trusted Auto Repair</div>
+    <h1>West Warwick's<em>Auto Repair Shop</em></h1>
+    <p class="hero-sub">Honest, affordable auto repair for all makes and models. Serving West Warwick and surrounding Rhode Island communities since day one.</p>
+    <div class="hero-btns">
+      <a href="#contact" class="btn-primary">Book a Service</a>
+      <a href="tel:+14018280900" class="btn-secondary">Call (401) 828-0900</a>
+    </div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-num">62+</div>
+    <div class="stat-label">5-Star Reviews</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">4.6★</div>
+    <div class="stat-label">Google Rating</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">All Makes</div>
+    <div class="stat-label">& Models</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">Free</div>
+    <div class="stat-label">Diagnostics</div>
+  </div>
+</div>
+
+<section class="services" id="services">
+  <div class="services-header">
+    <div class="section-label" style="justify-content:center;">What We Do</div>
+    <h2>Our Services</h2>
+    <p>Full-service auto repair for all makes and models of foreign and domestic vehicles in West Warwick, RI.</p>
+  </div>
+  <div class="services-grid">
+    <div class="service-card"><span class="service-icon">🔧</span><h3>Engine Repair</h3><p>Diagnostics, repair, and full rebuilds for all engine types.</p></div>
+    <div class="service-card"><span class="service-icon">🛞</span><h3>Brake Service</h3><p>Pads, rotors, calipers, and full brake system inspection.</p></div>
+    <div class="service-card"><span class="service-icon">🛢️</span><h3>Oil Changes</h3><p>Conventional and synthetic oil changes with filter replacement.</p></div>
+    <div class="service-card"><span class="service-icon">❄️</span><h3>AC Repair</h3><p>Recharge, leak detection, and full AC system repair.</p></div>
+    <div class="service-card"><span class="service-icon">⚙️</span><h3>Transmission</h3><p>Automatic and manual transmission repair and overhaul.</p></div>
+    <div class="service-card"><span class="service-icon">🔩</span><h3>Suspension</h3><p>Shocks, struts, alignment, and full suspension service.</p></div>
+    <div class="service-card"><span class="service-icon">🔋</span><h3>30/60/90K Service</h3><p>Factory-recommended maintenance at every milestone.</p></div>
+    <div class="service-card"><span class="service-icon">🔍</span><h3>Free Diagnostics</h3><p>Check engine light and full vehicle diagnostic at no charge.</p></div>
+  </div>
+</section>
+
+<section id="about" style="background: var(--dark); padding: 80px 40px;">
+  <div class="about">
+    <div class="about-text">
+      <div class="section-label">Who We Are</div>
+      <h2>West Warwick's Neighborhood Shop</h2>
+      <p>Rhode Island Auto Repair has been serving drivers in West Warwick and the surrounding area with honest, reliable auto service. We're a locally owned shop that treats every customer like a neighbor — because you are one.</p>
+      <p>Whether your car needs a routine oil change or a major engine repair, our experienced technicians get the job done right the first time. <strong>No runaround. No surprise charges. Just straight answers and quality work.</strong></p>
+      <a href="#contact" class="btn-primary" style="margin-top: 8px;">Schedule Service</a>
+    </div>
+    <div class="about-visual">
+      <ul class="checklist">
+        <li>Locally owned & operated</li>
+        <li>Experienced, skilled technicians</li>
+        <li>Free estimates on all repairs</li>
+        <li>Free check engine diagnostics</li>
+        <li>All makes and models welcome</li>
+        <li>Honest, transparent pricing</li>
+        <li>Convenient West Warwick location</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="reviews" id="reviews">
+  <div class="reviews-header">
+    <div class="section-label" style="justify-content: center;">What Customers Say</div>
+    <h2>Real Reviews</h2>
+  </div>
+  <div class="reviews-grid">
+    <div class="review-card">
+      <div class="stars">★★★★★</div>
+      <p class="review-text">"Brought my car in for a brake job and they had it done same day. Fair price, no BS. This is my go-to shop in West Warwick now."</p>
+      <div class="reviewer">— Mike T.</div>
+    </div>
+    <div class="review-card">
+      <div class="stars">★★★★★</div>
+      <p class="review-text">"Finally found a mechanic I can trust. They showed me exactly what was wrong, explained everything clearly, and didn't try to upsell me on stuff I didn't need."</p>
+      <div class="reviewer">— Sandra L.</div>
+    </div>
+    <div class="review-card">
+      <div class="stars">★★★★★</div>
+      <p class="review-text">"Check engine light came on the night before a road trip. They fit me in first thing in the morning, diagnosed it fast and got me back on the road. Lifesavers."</p>
+      <div class="reviewer">— Dave R.</div>
+    </div>
+  </div>
+  <div style="text-align: center;">
+    <div class="google-badge">
+      <span style="font-size: 24px;">⭐</span>
+      <div style="text-align: left;">
+        <div style="font-size: 22px; font-weight: 900;">4.6 Stars on Google</div>
+        <div style="font-size: 13px; color: #ccc; font-weight: 400;">62 reviews — Click to leave yours</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" style="background: var(--dark); padding: 80px 40px;">
+  <div class="contact-section">
+    <div class="section-label">Get In Touch</div>
+    <h2>Request Service</h2>
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="info-block">
+          <div class="info-label">Phone</div>
+          <a href="tel:+14018280900" class="info-value">(401) 828-0900</a>
+          <div class="info-sub">Call or text during business hours</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Address</div>
+          <span class="info-value" style="font-size: 20px;">442 Providence St</span>
+          <div class="info-sub">West Warwick, RI 02893</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Hours</div>
+          <span class="info-value" style="font-size: 20px;">Mon–Fri 8am–5pm</span>
+          <div class="info-sub">Closed weekends</div>
+        </div>
+        <div class="info-block">
+          <div class="info-label">Service Area</div>
+          <span class="info-value" style="font-size: 16px; font-weight: 500; color: #bbb;">West Warwick, Warwick, Cranston, Providence, Coventry & surrounding RI communities</span>
+        </div>
+      </div>
+      <div class="contact-form">
+        <div class="form-title">Book an Appointment</div>
+        <div class="form-row">
+          <div class="form-group"><label>Your Name</label><input type="text" placeholder="John Smith"></div>
+          <div class="form-group"><label>Phone Number</label><input type="tel" placeholder="(401) 000-0000"></div>
+        </div>
+        <div class="form-group"><label>Email Address</label><input type="email" placeholder="john@email.com"></div>
+        <div class="form-group">
+          <label>Service Needed</label>
+          <select>
+            <option value="">Select a service...</option>
+            <option>Oil Change & Tune-Up</option>
+            <option>Brake Service & Repair</option>
+            <option>Engine Repair / Diagnostic</option>
+            <option>Transmission Service</option>
+            <option>AC Repair</option>
+            <option>Suspension / Alignment</option>
+            <option>30/60/90K Maintenance</option>
+            <option>Other / Describe Below</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Additional Details</label><textarea placeholder="Tell us about your vehicle and what's going on..."></textarea></div>
+        <button class="submit-btn">Submit Request</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="areas">
+  <div class="areas-label">Areas We Serve</div>
+  <div class="areas-list">West Warwick · Warwick · Cranston · Providence · Coventry · East Greenwich · Johnston · RI</div>
+</div>
+
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="#" class="logo">Rhode Island<span> AUTO</span></a>
+      <p>Locally owned auto repair shop serving West Warwick and the surrounding Rhode Island communities. All makes and models welcome.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Services</h4>
+      <ul>
+        <li><a href="#services">Engine Repair</a></li>
+        <li><a href="#services">Brake Service</a></li>
+        <li><a href="#services">Oil Changes</a></li>
+        <li><a href="#services">AC Repair</a></li>
+        <li><a href="#services">Transmission</a></li>
+        <li><a href="#services">Suspension</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <ul>
+        <li><a href="tel:+14018280900">(401) 828-0900</a></li>
+        <li><a href="#">442 Providence St</a></li>
+        <li><a href="#">West Warwick, RI 02893</a></li>
+        <li><a href="#">Mon–Fri 8am–5pm</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    © 2026 Rhode Island Auto Repair. All rights reserved. | Serving West Warwick & Surrounding Areas
+  </div>
+</footer>
+
+</body>
+</html>
