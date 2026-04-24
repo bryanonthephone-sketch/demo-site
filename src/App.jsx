@@ -454,14 +454,14 @@ export default function App() {
   const prevXP = useRef({});
 
   useEffect(()=>{
-    async function load(){
-      try{ const r=await window.storage.get("rpgState_v6"); setState(r?JSON.parse(r.value):freshState()); }
+    function load(){
+      try{ const r=localStorage.getItem("rpgState_v6"); setState(r?JSON.parse(r):freshState()); }
       catch{ setState(freshState()); }
-    }
+    }  
     load();
   },[]);
 
-  useEffect(()=>{ if(state) window.storage.set("rpgState_v6",JSON.stringify(state)).catch(()=>{}); },[state]);
+  useEffect(()=>{ if(state) localStorage.setItem("rpgState_v6",JSON.stringify(state)); },[state]);
 
   useEffect(()=>{
     if(!state) return;
