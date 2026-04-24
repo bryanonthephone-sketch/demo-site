@@ -738,7 +738,8 @@ export default function App() {
   );
 
   return (
-    <div className="rpg" style={{background:"#070710",minHeight:"100vh",maxWidth:"100%",margin:"0 auto",position:"relative"}}>
+    <div style={{background:"#030308",minHeight:"100vh"}}>
+      <div className="rpg" style={{background:"#070710",minHeight:"100vh",maxWidth:"100%",margin:"0 auto",position:"relative",paddingBottom:80}}>
 
       {/* Fixed overlays */}
       {!isDesktop&&(
@@ -1170,6 +1171,7 @@ export default function App() {
           ))}
         </div>
       )}
-    </div>
+    </div>  
+  </div>
   );
 }
