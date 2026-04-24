@@ -201,7 +201,7 @@ const StatDetail = ({sk,state,onClose,onLevelTable}) => {
   const maxXP=Math.max(...days7.map(d=>d.xpEarned),1);
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0a0a14",border:`1px solid ${cfg.color}44`,borderRadius:"14px 14px 0 0",padding:"22px 20px 36px",width:"100%",maxWidth:480,maxHeight:"85vh",overflow:"auto",boxShadow:`0 -10px 40px ${cfg.glow}`}}>
+      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0a0a14",border:`1px solid ${cfg.color}44`,borderRadius:"14px 14px 0 0",padding:"22px 20px 36px",width:"100%",maxWidth:"100%",maxHeight:"85vh",overflow:"auto",boxShadow:`0 -10px 40px ${cfg.glow}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:24}}>{cfg.icon}</span>
@@ -291,7 +291,7 @@ const CreateModal = ({stat,mode,onAdd,onClose}) => {
   const isHabit=mode==="habit";
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.84)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:`1px solid ${isHabit?"#ffd600":cfg.color}44`,borderRadius:"14px 14px 0 0",padding:"22px 20px 34px",width:"100%",maxWidth:480,boxShadow:`0 -10px 40px ${isHabit?"rgba(255,214,0,.3)":cfg.glow}`}}>
+      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:`1px solid ${isHabit?"#ffd600":cfg.color}44`,borderRadius:"14px 14px 0 0",padding:"22px 20px 34px",width:"100%",maxWidth:"100%",boxShadow:`0 -10px 40px ${isHabit?"rgba(255,214,0,.3)":cfg.glow}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div>
             <div style={{fontFamily:"'Orbitron',monospace",fontSize:12,fontWeight:700,color:"#fff",letterSpacing:1}}>{isHabit?"ADD HABIT":"ADD CUSTOM TASK"}</div>
@@ -606,9 +606,9 @@ export default function App() {
   const NAV=[{id:"dashboard",label:"HOME",icon:"◈"},{id:"sleep",label:"SLEEP",icon:"🌙"},{id:"archive",label:"LOG",icon:"📜"},{id:"__reset",label:"RESET",icon:"⚙️"}];
 
   return (
-    <div className="rpg" style={{background:"#070710",minHeight:"100vh",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:80}}>
+    <div className="rpg" style={{background:"#070710",minHeight:"100vh",maxWidth:"100%",margin:"0 auto",position:"relative",paddingBottom:80}}>
 
-      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,overflow:"hidden",pointerEvents:"none",zIndex:0,maxWidth:480,margin:"0 auto"}}>
+      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,overflow:"hidden",pointerEvents:"none",zIndex:0,maxWidth:"100%",margin:"0 auto"}}>
         <div className="scanl"/>
       </div>
 
@@ -959,7 +959,7 @@ export default function App() {
         {view==="archive"&&<Archive taskLog={state.taskLog} sleepLog={state.sleepLog}/>}
       </div>
 
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"rgba(7,7,16,.97)",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",padding:"8px 0 10px",zIndex:100,backdropFilter:"blur(12px)"}}>
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"100%",background:"rgba(7,7,16,.97)",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",padding:"8px 0 10px",zIndex:100,backdropFilter:"blur(12px)"}}>
         {NAV.map(n=>(
           <button key={n.id} className="nb" onClick={()=>n.id==="__reset"?setShowReset(true):setView(n.id)} style={{flex:1,background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"5px 0",borderRadius:5,transition:"background .14s"}}>
             <span style={{fontSize:14}}>{n.icon}</span>
