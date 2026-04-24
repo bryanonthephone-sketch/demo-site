@@ -88,14 +88,25 @@ const freshState = () => ({
   name:"Hunter",
   statXP:Object.fromEntries(Object.keys(STAT_CONFIG).map(k=>[k,0])),
   lastActivity:Object.fromEntries(Object.keys(STAT_CONFIG).map(k=>[k,null])),
-  taskLog:[],       // {date,taskId,taskName,stat,rank,xp,isCustom,isHabit}
+  taskLog:[],
   sleepLog:[],
-  customTasks:[],   // {id,stat,name,rank,isCustom:true}
-  habits:[],        // {id,stat,name,rank,isHabit:true}
+  customTasks:[],
+  habits:[],
   hiddenTasks:[],
-  taskNameOverrides:{}, // {taskId: newName}
+  taskNameOverrides:{},
   lastDecayCheck:null,
 });
+
+// ── RESPONSIVE HOOK ──────────────────────────────────────────────────────────
+function useIsDesktop(breakpoint=900) {
+  const [isDesktop,setIsDesktop]=useState(()=>typeof window!=="undefined"&&window.innerWidth>=breakpoint);
+  useEffect(()=>{
+    const fn=()=>setIsDesktop(window.innerWidth>=breakpoint);
+    window.addEventListener("resize",fn);
+    return ()=>window.removeEventListener("resize",fn);
+  },[breakpoint]);
+  return isDesktop;
+}
 
 // ── STYLES ───────────────────────────────────────────────────────────────────
 const injectStyles = () => {
@@ -106,6 +117,7 @@ const injectStyles = () => {
     .rpg,.rpg*{box-sizing:border-box;} .rpg{font-family:'Rajdhani',sans-serif;}
     @keyframes fadeIn  {from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
     @keyframes slideUp {from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+    @keyframes slideIn {from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
     @keyframes scan    {0%{top:-5%}100%{top:105%}}
     @keyframes pulse   {0%,100%{opacity:.4}50%{opacity:1}}
     @keyframes bpulse  {0%,100%{border-color:rgba(41,121,255,.25)}50%{border-color:rgba(41,121,255,.6)}}
@@ -115,6 +127,7 @@ const injectStyles = () => {
     @keyframes popIn   {0%{transform:scale(.8);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
     .fade  {animation:fadeIn .22s ease both;}
     .slide {animation:slideUp .28s cubic-bezier(.2,.8,.2,1) both;}
+    .slideIn{animation:slideIn .22s cubic-bezier(.2,.8,.2,1) both;}
     .scanl {position:absolute;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(41,121,255,.1),transparent);animation:scan 5s linear infinite;pointer-events:none;}
     .sc{transition:transform .18s,box-shadow .18s;cursor:pointer;}.sc:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4);}
     .tr:hover{background:rgba(255,255,255,.04)!important;}
@@ -127,8 +140,10 @@ const injectStyles = () => {
     .shimmer{background:linear-gradient(90deg,#ffd600,#fff,#ffd600);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 2s linear infinite;}
     .lvl-anim{animation:lvlUp 3s ease forwards;}
     .pop{animation:popIn .25s cubic-bezier(.2,.8,.2,1);}
-    .habit-btn{transition:all .15s;active:scale(.95);}
+    .habit-btn{transition:all .15s;}
     .habit-btn:hover{filter:brightness(1.2);}
+    .snav-btn{transition:all .15s;cursor:pointer;}
+    .snav-btn:hover{background:rgba(255,255,255,.05)!important;color:#aaa!important;}
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#070710}::-webkit-scrollbar-thumb{background:#1a1a2e;border-radius:2px}
   `;
   document.head.appendChild(s);
@@ -157,7 +172,7 @@ const LevelTable = ({currentXP,color,glow,statName,onClose}) => {
   const curLvl=getLevel(currentXP);
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0a0a14",border:`1px solid ${color}44`,borderRadius:12,padding:"22px 18px",width:"100%",maxWidth:360,maxHeight:"80vh",overflow:"auto",boxShadow:`0 0 40px ${glow}`}}>
+      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0a0a14",border:`1px solid ${color}44`,borderRadius:12,padding:"22px 18px",width:"100%",maxWidth:400,maxHeight:"80vh",overflow:"auto",boxShadow:`0 0 40px ${glow}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
           <div>
             <div style={{fontFamily:"'Orbitron',monospace",fontSize:12,fontWeight:700,color:"#fff",letterSpacing:1}}>RANK PROGRESSION</div>
@@ -190,7 +205,7 @@ const LevelTable = ({currentXP,color,glow,statName,onClose}) => {
 };
 
 // ── STAT DETAIL ──────────────────────────────────────────────────────────────
-const StatDetail = ({sk,state,onClose,onLevelTable}) => {
+const StatDetail = ({sk,state,onClose,onLevelTable,isDesktop}) => {
   const cfg=STAT_CONFIG[sk],xp=state.statXP[sk],lvl=getLevel(xp);
   const ds=decayStatus(sk,state.lastActivity);
   const days7=Array.from({length:7},(_,i)=>{
@@ -199,9 +214,12 @@ const StatDetail = ({sk,state,onClose,onLevelTable}) => {
     return {d,xpEarned:tasks.reduce((s,t)=>s+t.xp,0)};
   });
   const maxXP=Math.max(...days7.map(d=>d.xpEarned),1);
+  const align=isDesktop?"center":"flex-end";
+  const radius=isDesktop?"12px":"14px 14px 0 0";
+  const mw=isDesktop?540:"100%";
   return (
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0a0a14",border:`1px solid ${cfg.color}44`,borderRadius:"14px 14px 0 0",padding:"22px 20px 36px",width:"100%",maxWidth:"100%",maxHeight:"85vh",overflow:"auto",boxShadow:`0 -10px 40px ${cfg.glow}`}}>
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:400,display:"flex",alignItems:align,justifyContent:"center",padding:isDesktop?"20px":"0"}}>
+      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0a0a14",border:`1px solid ${cfg.color}44`,borderRadius:radius,padding:"22px 20px 36px",width:"100%",maxWidth:mw,maxHeight:"85vh",overflow:"auto",boxShadow:`0 -10px 40px ${cfg.glow}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:24}}>{cfg.icon}</span>
@@ -284,14 +302,16 @@ const SysMsg = ({msg,color,onDone}) => {
 };
 
 // ── TASK/HABIT CREATION MODAL ────────────────────────────────────────────────
-const CreateModal = ({stat,mode,onAdd,onClose}) => {
-  // mode: "task" | "habit"
+const CreateModal = ({stat,mode,onAdd,onClose,isDesktop}) => {
   const [name,setName]=useState(""); const [rank,setRank]=useState("B");
   const cfg=STAT_CONFIG[stat];
   const isHabit=mode==="habit";
+  const align=isDesktop?"center":"flex-end";
+  const radius=isDesktop?"12px":"14px 14px 0 0";
+  const mw=isDesktop?440:"100%";
   return (
-    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.84)",zIndex:300,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:`1px solid ${isHabit?"#ffd600":cfg.color}44`,borderRadius:"14px 14px 0 0",padding:"22px 20px 34px",width:"100%",maxWidth:"100%",boxShadow:`0 -10px 40px ${isHabit?"rgba(255,214,0,.3)":cfg.glow}`}}>
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.84)",zIndex:300,display:"flex",alignItems:align,justifyContent:"center",padding:isDesktop?"20px":"0"}}>
+      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:`1px solid ${isHabit?"#ffd600":cfg.color}44`,borderRadius:radius,padding:"22px 20px 34px",width:"100%",maxWidth:mw,boxShadow:`0 -10px 40px ${isHabit?"rgba(255,214,0,.3)":cfg.glow}`}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
           <div>
             <div style={{fontFamily:"'Orbitron',monospace",fontSize:12,fontWeight:700,color:"#fff",letterSpacing:1}}>{isHabit?"ADD HABIT":"ADD CUSTOM TASK"}</div>
@@ -333,7 +353,7 @@ const EditNameModal = ({currentName,onSave,onClose}) => {
   const [val,setVal]=useState(currentName);
   return (
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.84)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.15)",borderRadius:12,padding:"22px 20px",width:"100%",maxWidth:360}}>
+      <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.15)",borderRadius:12,padding:"22px 20px",width:"100%",maxWidth:380}}>
         <div style={{fontFamily:"'Orbitron',monospace",fontSize:12,fontWeight:700,color:"#fff",letterSpacing:1,marginBottom:4}}>RENAME TASK</div>
         <div style={{fontSize:9,color:"#444",fontFamily:"'Share Tech Mono',monospace",marginBottom:14}}>Edit the name for this task</div>
         <input value={val} onChange={e=>setVal(e.target.value)} autoFocus
@@ -351,7 +371,7 @@ const EditNameModal = ({currentName,onSave,onClose}) => {
 // ── RESET MODAL ──────────────────────────────────────────────────────────────
 const ResetModal = ({onConfirm,onClose}) => (
   <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.88)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 24px"}}>
-    <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:"1px solid rgba(255,68,68,.45)",borderRadius:12,padding:"28px 22px",width:"100%",maxWidth:360,boxShadow:"0 0 40px rgba(255,68,68,.2)"}}>
+    <div className="slide" onClick={e=>e.stopPropagation()} style={{background:"#0d0d1a",border:"1px solid rgba(255,68,68,.45)",borderRadius:12,padding:"28px 22px",width:"100%",maxWidth:380,boxShadow:"0 0 40px rgba(255,68,68,.2)"}}>
       <div style={{textAlign:"center",marginBottom:22}}>
         <div style={{fontSize:28,marginBottom:10}}>⚠️</div>
         <div style={{fontFamily:"'Orbitron',monospace",fontSize:13,fontWeight:700,color:"#ff4444",letterSpacing:1,marginBottom:10}}>RESET ALL DATA</div>
@@ -366,15 +386,15 @@ const ResetModal = ({onConfirm,onClose}) => (
 );
 
 // ── ARCHIVE ──────────────────────────────────────────────────────────────────
-const Archive = ({taskLog,sleepLog}) => {
+const Archive = ({taskLog,sleepLog,isDesktop}) => {
   const [filter,setFilter]=useState("all");
   const allDates=[...new Set([...(taskLog||[]).map(t=>t.date),...(sleepLog||[]).map(s=>s.date)])].sort((a,b)=>b.localeCompare(a));
   const filtered=filter==="all"?(taskLog||[]):(taskLog||[]).filter(t=>t.stat===filter);
   const totalXPAll=(taskLog||[]).reduce((s,t)=>s+t.xp,0)+((sleepLog||[]).reduce((s,t)=>s+t.xp,0));
   return (
-    <div className="fade" style={{padding:"20px 16px 0"}}>
-      <div style={{fontFamily:"'Orbitron',monospace",fontSize:13,fontWeight:700,color:"#fff",letterSpacing:2,marginBottom:3}}>📜 ARCHIVE</div>
-      <div style={{fontSize:9,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:14}}>Complete activity history</div>
+    <div className="fade" style={{padding:isDesktop?"28px 32px 0":"20px 16px 0"}}>
+      {!isDesktop&&<div style={{fontFamily:"'Orbitron',monospace",fontSize:13,fontWeight:700,color:"#fff",letterSpacing:2,marginBottom:3}}>📜 ARCHIVE</div>}
+      {!isDesktop&&<div style={{fontSize:9,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:14}}>Complete activity history</div>}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
         {[["TOTAL XP",totalXPAll,"#ffd600"],["ACTIVE DAYS",allDates.length,"#2979ff"]].map(([l,v,c])=>(
           <div key={l} style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:8,padding:"10px",textAlign:"center"}}>
@@ -434,6 +454,8 @@ const Archive = ({taskLog,sleepLog}) => {
 export default function App() {
   useEffect(()=>{ injectStyles(); },[]);
 
+  const isDesktop = useIsDesktop(900);
+
   const [state,       setState]       = useState(null);
   const [view,        setView]        = useState("dashboard");
   const [activeStat,  setActiveStat]  = useState(null);
@@ -441,24 +463,21 @@ export default function App() {
   const [rankSel,     setRankSel]     = useState({});
   const [sleepInput,  setSleepInput]  = useState("");
   const [toast,       setToast]       = useState(null);
-  const [createMode,  setCreateMode]  = useState(null); // "task" | "habit" | null
+  const [createMode,  setCreateMode]  = useState(null);
   const [showReset,   setShowReset]   = useState(false);
-  const [editTarget,  setEditTarget]  = useState(null); // {id, currentName, isHabit, isCustom}
+  const [editTarget,  setEditTarget]  = useState(null);
   const [editName_,   setEditName_]   = useState(false);
   const [nameInput,   setNameInput]   = useState("");
   const [levelUpQ,    setLevelUpQ]    = useState([]);
   const [sysMsg,      setSysMsg]      = useState(null);
   const [statDetail,  setStatDetail]  = useState(null);
   const [levelTable,  setLevelTable]  = useState(null);
-  const [habitPops,   setHabitPops]   = useState({}); // habitId -> flash counter
+  const [habitPops,   setHabitPops]   = useState({});
   const prevXP = useRef({});
 
   useEffect(()=>{
-    function load(){
-      try{ const r=localStorage.getItem("rpgState_v6"); setState(r?JSON.parse(r):freshState()); }
-      catch{ setState(freshState()); }
-    }  
-    load();
+    try{ const r=localStorage.getItem("rpgState_v6"); setState(r?JSON.parse(r):freshState()); }
+    catch{ setState(freshState()); }
   },[]);
 
   useEffect(()=>{ if(state) localStorage.setItem("rpgState_v6",JSON.stringify(state)); },[state]);
@@ -498,7 +517,6 @@ export default function App() {
   const toast$  = (msg,color="#00e676") => { setToast({msg,color}); setTimeout(()=>setToast(null),2400); };
   const showSys = (msg,color) => setSysMsg({msg,color});
 
-  // Complete a daily task
   const completeTask = (taskId,taskName,stat,rank,isCustom=false) => {
     if(todayDone[taskId]) return;
     const xp=TASK_XP[rank],today=todayStr();
@@ -516,7 +534,6 @@ export default function App() {
     toast$(`+${xp} ${STAT_CONFIG[stat].name} XP`);
   };
 
-  // Log a habit (repeatable)
   const logHabit = (habit) => {
     const xp=TASK_XP[habit.rank],today=todayStr();
     setState(prev=>{
@@ -527,7 +544,6 @@ export default function App() {
       if(delta!==0){ newXP.will=Math.max(0,newXP.will+delta); newLast.will=today; }
       return {...prev,statXP:newXP,lastActivity:newLast,taskLog:newLog};
     });
-    // flash the button
     setHabitPops(p=>({...p,[habit.id]:(p[habit.id]||0)+1}));
     setTimeout(()=>setHabitPops(p=>({...p,[habit.id]:(p[habit.id]||1)-1})),400);
     toast$(`+${xp} ${STAT_CONFIG[habit.stat].name} XP (habit)`,"#ffd600");
@@ -569,7 +585,7 @@ export default function App() {
       return {...prev,statXP:newXP,lastActivity:newLast,sleepLog:newSleep};
     });
     toast$(xp>0?`+${xp} Health XP`:"Logged — aim for 7+",xp>0?"#00e676":"#ff8c00");
-    setSleepInput(""); setView("dashboard");
+    setSleepInput(""); if(!isDesktop) setView("dashboard");
   };
 
   const resetAll = () => {
@@ -586,15 +602,15 @@ export default function App() {
     </div>
   );
 
-  const today     = todayStr();
-  const ovLvl     = getOverallLevel(state.statXP);
-  const sleepToday= (state.sleepLog||[]).find(s=>s.date===today);
-  const statKeys  = Object.keys(STAT_CONFIG).filter(k=>k!=="will");
-  const statsFedN = new Set((state.taskLog||[]).filter(t=>t.date===today&&t.stat!=="will"&&!t.isHabit).map(t=>t.stat)).size;
-  const totalFed  = statsFedN+(sleepToday?1:0);
-  const streak    = calcStreak(state.taskLog||[],state.sleepLog||[]);
-  const xpToday   = todayXP(state.taskLog||[],state.sleepLog||[]);
-  const decayAlerts = statKeys.filter(k=>decayStatus(k,state.lastActivity).status!=="safe");
+  const today      = todayStr();
+  const ovLvl      = getOverallLevel(state.statXP);
+  const sleepToday = (state.sleepLog||[]).find(s=>s.date===today);
+  const statKeys   = Object.keys(STAT_CONFIG).filter(k=>k!=="will");
+  const statsFedN  = new Set((state.taskLog||[]).filter(t=>t.date===today&&t.stat!=="will"&&!t.isHabit).map(t=>t.stat)).size;
+  const totalFed   = statsFedN+(sleepToday?1:0);
+  const streak     = calcStreak(state.taskLog||[],state.sleepLog||[]);
+  const xpToday    = todayXP(state.taskLog||[],state.sleepLog||[]);
+  const decayAlerts= statKeys.filter(k=>decayStatus(k,state.lastActivity).status!=="safe");
 
   const getStatTasks = (key) => [
     ...(DEFAULT_TASKS[key]||[]).filter(t=>!(state.hiddenTasks||[]).includes(t.id)).map(t=>({...t,name:(state.taskNameOverrides||{})[t.id]||t.name})),
@@ -603,371 +619,557 @@ export default function App() {
   const getStatHabits = (key) => (state.habits||[]).filter(h=>h.stat===key);
   const habitCountToday = (habitId) => (state.taskLog||[]).filter(t=>t.date===today&&t.taskId===habitId&&t.isHabit).length;
 
-  const NAV=[{id:"dashboard",label:"HOME",icon:"◈"},{id:"sleep",label:"SLEEP",icon:"🌙"},{id:"archive",label:"LOG",icon:"📜"},{id:"__reset",label:"RESET",icon:"⚙️"}];
+  const SIDEBAR_W = 256;
 
-  return (
-    <div className="rpg" style={{background:"#070710",minHeight:"100vh",maxWidth:"100%",margin:"0 auto",position:"relative",paddingBottom:80}}>
-
-      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,overflow:"hidden",pointerEvents:"none",zIndex:0,maxWidth:"100%",margin:"0 auto"}}>
+  // ── DESKTOP SIDEBAR ────────────────────────────────────────────────────────
+  const DesktopSidebar = () => (
+    <div className="slideIn" style={{
+      position:"fixed",left:0,top:0,width:SIDEBAR_W,height:"100vh",
+      background:"#06060f",borderRight:"1px solid rgba(255,255,255,.07)",
+      display:"flex",flexDirection:"column",zIndex:200,overflowY:"auto",
+    }}>
+      {/* Scanline */}
+      <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,overflow:"hidden",pointerEvents:"none"}}>
         <div className="scanl"/>
       </div>
+
+      {/* Branding */}
+      <div style={{padding:"20px 18px 16px",borderBottom:"1px solid rgba(255,255,255,.05)",position:"relative"}}>
+        <div style={{fontFamily:"'Share Tech Mono',monospace",fontSize:8,color:"#2979ff",letterSpacing:3,marginBottom:3}}>[ SYSTEM v2.0 ]</div>
+        <div style={{fontFamily:"'Orbitron',monospace",fontSize:14,fontWeight:900,color:"#fff",letterSpacing:2}}>LEVELING OS</div>
+      </div>
+
+      {/* Character */}
+      <div style={{padding:"16px 18px",borderBottom:"1px solid rgba(255,255,255,.05)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:12}}>
+          <div className="float" style={{fontSize:26,lineHeight:1,filter:"drop-shadow(0 0 8px rgba(41,121,255,.4))"}}>{CHAR_ICONS[ovLvl-1]}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Orbitron',monospace",fontSize:13,fontWeight:900,color:"#fff",letterSpacing:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{state.name}</div>
+            <button onClick={()=>setLevelTable({xp:0,color:"#2979ff",glow:"rgba(41,121,255,0.5)",name:"Overall Level"})} style={{fontFamily:"'Orbitron',monospace",fontSize:7,color:"#2979ff",letterSpacing:1,background:"transparent",border:"none",cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>{CHAR_TITLES[ovLvl-1].toUpperCase()} ↗</button>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontFamily:"'Orbitron',monospace",fontSize:26,fontWeight:900,color:"#ffd600",lineHeight:1,textShadow:"0 0 14px rgba(255,214,0,.5)"}}>{ovLvl}</div>
+            <div style={{fontSize:7,color:"#333",fontFamily:"'Share Tech Mono',monospace"}}>OVRL</div>
+          </div>
+        </div>
+
+        {/* Will */}
+        <div style={{marginBottom:10}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+            <button onClick={()=>setLevelTable({xp:state.statXP.will,color:"#ffd600",glow:"rgba(255,214,0,0.5)",name:"Will"})} style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:"#ffd600",letterSpacing:.8,background:"transparent",border:"none",cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>👁️ WILL — LVL {getLevel(state.statXP.will)} ↗</button>
+            <span style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:"#ffd600",fontWeight:700}}>{state.statXP.will}</span>
+          </div>
+          <XPBar xp={state.statXP.will} color="#ffd600" glow="rgba(255,214,0,.5)" thin/>
+        </div>
+
+        {/* Today progress dots */}
+        <div style={{marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:7,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:4}}>
+            <span>TODAY {totalFed}/9</span>
+            <span style={{color:totalFed>=8?"#ffd600":totalFed>=4?"#00e676":"#444"}}>WILL +{totalFed>=8?60:totalFed>=6?35:totalFed>=4?15:0}</span>
+          </div>
+          <div style={{display:"flex",gap:2}}>
+            {[...statKeys,"sleep"].map((k,i)=>{
+              const fed=k==="sleep"?!!sleepToday:(state.taskLog||[]).some(t=>t.date===today&&t.stat===k&&!t.isHabit);
+              return <div key={i} style={{flex:1,height:3,borderRadius:2,background:fed?"#2979ff":"rgba(255,255,255,.07)",boxShadow:fed?"0 0 4px #2979ff":"none",transition:"all .3s"}}/>;
+            })}
+          </div>
+        </div>
+
+        {/* Streak + XP chips */}
+        <div style={{display:"flex",gap:6}}>
+          {[[streak>0?"🔥":"💤",`${streak}d streak`,streak>0?"#ff8c00":"#333"],["⚡",`+${xpToday} today`,"#ffd600"]].map(([icon,label,c])=>(
+            <div key={label} style={{flex:1,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.05)",borderRadius:5,padding:"5px 7px",display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:11}}>{icon}</span>
+              <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:8,color:c,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div style={{padding:"12px 10px",flex:1}}>
+        {[
+          {id:"dashboard",label:"HOME",icon:"◈"},
+          {id:"sleep",label:"SLEEP LOG",icon:"🌙"},
+          {id:"archive",label:"ACTIVITY LOG",icon:"📜"},
+        ].map(n=>(
+          <button key={n.id} className="snav-btn" onClick={()=>setView(n.id)} style={{
+            width:"100%",display:"flex",alignItems:"center",gap:10,
+            background:view===n.id?"rgba(41,121,255,.12)":"transparent",
+            border:view===n.id?"1px solid rgba(41,121,255,.28)":"1px solid transparent",
+            color:view===n.id?"#2979ff":"#444",
+            borderRadius:7,padding:"10px 12px",cursor:"pointer",
+            fontFamily:"'Orbitron',monospace",fontSize:9,letterSpacing:.8,fontWeight:700,
+            marginBottom:3,transition:"all .15s",textAlign:"left",
+          }}>
+            <span style={{fontSize:13,minWidth:16,textAlign:"center"}}>{n.icon}</span>
+            {n.label}
+            {view===n.id&&<div style={{marginLeft:"auto",width:4,height:4,borderRadius:"50%",background:"#2979ff",boxShadow:"0 0 6px #2979ff"}}/>}
+          </button>
+        ))}
+
+        {/* Decay alerts in sidebar */}
+        {decayAlerts.length>0&&(
+          <div style={{marginTop:12,background:"rgba(255,23,68,.05)",border:"1px solid rgba(255,23,68,.2)",borderRadius:7,padding:"10px 11px"}}>
+            <div style={{fontSize:7,color:"#ff1744",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:7}}>⚠ DECAY ALERTS</div>
+            {decayAlerts.map(k=>{
+              const cfg=STAT_CONFIG[k],ds=decayStatus(k,state.lastActivity);
+              return <div key={k} onClick={()=>{setActiveStat(k);setView("tasks");}} style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",marginBottom:4,padding:"3px 0"}}>
+                <span style={{fontSize:11}}>{cfg.icon}</span>
+                <span style={{fontSize:10,color:"#ccc",flex:1,fontWeight:600}}>{cfg.name}</span>
+                <span className="dp" style={{fontSize:7,color:ds.status==="warn"?"#ff8c00":"#ff1744",fontFamily:"'Orbitron',monospace"}}>{ds.status==="warn"?"SOON":"▼"}</span>
+              </div>;
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Reset */}
+      <div style={{padding:"12px 10px",borderTop:"1px solid rgba(255,255,255,.05)"}}>
+        <button onClick={()=>setShowReset(true)} style={{
+          width:"100%",background:"transparent",border:"1px solid rgba(255,68,68,.12)",
+          color:"rgba(255,68,68,.35)",borderRadius:6,padding:"8px",cursor:"pointer",
+          fontFamily:"'Orbitron',monospace",fontSize:8,letterSpacing:1,
+          transition:"all .15s",
+        }}>⚙️ RESET SYSTEM</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="rpg" style={{background:"#070710",minHeight:"100vh",maxWidth:"100%",margin:"0 auto",position:"relative"}}>
+
+      {/* Fixed overlays */}
+      {!isDesktop&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,overflow:"hidden",pointerEvents:"none",zIndex:0}}>
+          <div className="scanl"/>
+        </div>
+      )}
 
       {toast&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",background:"#0d0d1a",border:`1px solid ${toast.color}`,color:toast.color,padding:"7px 16px",borderRadius:6,fontFamily:"'Orbitron',monospace",fontSize:10,letterSpacing:1,zIndex:700,boxShadow:`0 0 16px ${toast.color}44`,whiteSpace:"nowrap",animation:"fadeIn .18s ease"}}>{toast.msg}</div>}
       {sysMsg&&<SysMsg msg={sysMsg.msg} color={sysMsg.color} onDone={()=>setSysMsg(null)}/>}
       {levelUpQ.length>0&&<LevelUpOverlay stat={levelUpQ[0].stat} newLevel={levelUpQ[0].newLevel} onDone={()=>setLevelUpQ(q=>q.slice(1))}/>}
-      {createMode&&activeStat&&<CreateModal stat={activeStat} mode={createMode} onAdd={(n,r)=>createMode==="habit"?addHabit(activeStat,n,r):addTask(activeStat,n,r)} onClose={()=>setCreateMode(null)}/>}
+      {createMode&&activeStat&&<CreateModal stat={activeStat} mode={createMode} onAdd={(n,r)=>createMode==="habit"?addHabit(activeStat,n,r):addTask(activeStat,n,r)} onClose={()=>setCreateMode(null)} isDesktop={isDesktop}/>}
       {showReset&&<ResetModal onConfirm={resetAll} onClose={()=>setShowReset(false)}/>}
       {editTarget&&<EditNameModal currentName={editTarget.currentName} onSave={(n)=>saveTaskName(editTarget,n)} onClose={()=>setEditTarget(null)}/>}
-      {statDetail&&<StatDetail sk={statDetail} state={state} onClose={()=>setStatDetail(null)} onLevelTable={()=>{ const cfg=STAT_CONFIG[statDetail]; setLevelTable({xp:state.statXP[statDetail],color:cfg.color,glow:cfg.glow,name:cfg.name}); }}/>}
+      {statDetail&&<StatDetail sk={statDetail} state={state} onClose={()=>setStatDetail(null)} isDesktop={isDesktop} onLevelTable={()=>{ const cfg=STAT_CONFIG[statDetail]; setLevelTable({xp:state.statXP[statDetail],color:cfg.color,glow:cfg.glow,name:cfg.name}); }}/>}
       {levelTable&&<LevelTable currentXP={levelTable.xp} color={levelTable.color} glow={levelTable.glow} statName={levelTable.name} onClose={()=>setLevelTable(null)}/>}
 
-      <div style={{position:"relative",zIndex:1}}>
+      {/* Desktop sidebar */}
+      {isDesktop&&<DesktopSidebar/>}
 
-        {/* ══ DASHBOARD ══════════════════════════════════════════ */}
-        {view==="dashboard"&&(
-          <div className="fade" style={{padding:"20px 16px 0"}}>
+      {/* Main content */}
+      <div style={{
+        marginLeft:isDesktop?SIDEBAR_W:0,
+        paddingBottom:isDesktop?48:80,
+        position:"relative",zIndex:1,
+        minHeight:"100vh",
+      }}>
+        {/* Inner max-width wrapper */}
+        <div style={{
+          maxWidth:isDesktop?1000:"100%",
+          margin:isDesktop?"0 auto":"0",
+        }}>
 
-            {/* Character card */}
-            <div className="bp" style={{background:"linear-gradient(135deg,#0d0d2a,#0a0a18)",border:"1px solid rgba(41,121,255,.25)",borderRadius:12,padding:18,marginBottom:16,position:"relative",overflow:"hidden",boxShadow:"0 0 28px rgba(41,121,255,.1)"}}>
-              <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#2979ff,transparent)"}}/>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-                <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <div className="float" style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 0 8px rgba(41,121,255,.5))"}}>{CHAR_ICONS[ovLvl-1]}</div>
-                  <div>
-                    {editName_?(
-                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                        <input value={nameInput} onChange={e=>setNameInput(e.target.value)} autoFocus
-                          onKeyDown={e=>{if(e.key==="Enter"){setState(p=>({...p,name:nameInput||p.name}));setEditName_(false);}}}
-                          style={{background:"rgba(255,255,255,.05)",border:"1px solid #2979ff",borderRadius:4,color:"#fff",padding:"4px 8px",fontFamily:"'Orbitron',monospace",fontSize:12,width:110,outline:"none"}}/>
-                        <button onClick={()=>{setState(p=>({...p,name:nameInput||p.name}));setEditName_(false);}} style={{background:"#2979ff",color:"#fff",border:"none",borderRadius:4,padding:"4px 9px",cursor:"pointer",fontSize:9,fontFamily:"'Orbitron',monospace"}}>SET</button>
-                      </div>
-                    ):(
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <div style={{fontFamily:"'Orbitron',monospace",fontSize:17,fontWeight:900,color:"#fff",letterSpacing:2}}>{state.name}</div>
-                        <button onClick={()=>{setNameInput(state.name);setEditName_(true);}} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:10,padding:0}}>✏️</button>
-                      </div>
-                    )}
-                    <button onClick={()=>setLevelTable({xp:0,color:"#2979ff",glow:"rgba(41,121,255,0.5)",name:"Overall Level"})} style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:"#2979ff",letterSpacing:1.5,marginTop:2,background:"transparent",border:"none",cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>
-                      {CHAR_TITLES[ovLvl-1].toUpperCase()} ↗
-                    </button>
-                  </div>
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontFamily:"'Orbitron',monospace",fontSize:34,fontWeight:900,color:"#ffd600",lineHeight:1,textShadow:"0 0 18px rgba(255,214,0,.55)"}}>{ovLvl}</div>
-                  <div style={{fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace"}}>OVERALL LVL</div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:8,marginBottom:12}}>
-                {[[streak>0?"🔥":"💤",`${streak}d streak`,streak>0?"#ff8c00":"#333"],["⚡",`+${xpToday} XP today`,"#ffd600"]].map(([icon,label,c])=>(
-                  <div key={label} style={{flex:1,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.06)",borderRadius:6,padding:"6px 8px",display:"flex",alignItems:"center",gap:5}}>
-                    <span style={{fontSize:12}}>{icon}</span>
-                    <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:c}}>{label}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{marginBottom:11}}>
-                <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:4}}>
-                  <span>TODAY · {totalFed}/9 STATS FED</span>
-                  <span style={{color:totalFed>=8?"#ffd600":totalFed>=6?"#00e676":totalFed>=4?"#ff8c00":"#333"}}>WILL +{totalFed>=8?60:totalFed>=6?35:totalFed>=4?15:0}</span>
-                </div>
-                <div style={{display:"flex",gap:3}}>
-                  {[...statKeys,"sleep"].map((k,i)=>{
-                    const fed=k==="sleep"?!!sleepToday:(state.taskLog||[]).some(t=>t.date===today&&t.stat===k&&!t.isHabit);
-                    return <div key={i} style={{flex:1,height:4,borderRadius:2,background:fed?"#2979ff":"rgba(255,255,255,.06)",boxShadow:fed?"0 0 5px #2979ff":"none",transition:"all .3s"}}/>;
-                  })}
-                </div>
-              </div>
-              <div style={{paddingTop:11,borderTop:"1px solid rgba(255,255,255,.05)"}}>
-                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
-                  <span style={{fontSize:13}}>👁️</span>
-                  <button onClick={()=>setLevelTable({xp:state.statXP.will,color:"#ffd600",glow:"rgba(255,214,0,0.5)",name:"Will"})} style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:"#ffd600",letterSpacing:.8,flex:1,background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>
-                    WILL — LVL {getLevel(state.statXP.will)} · {STAT_TITLES[getLevel(state.statXP.will)-1]} ↗
-                  </button>
-                  <span style={{fontFamily:"'Orbitron',monospace",fontSize:11,fontWeight:700,color:"#ffd600",textShadow:"0 0 8px rgba(255,214,0,.5)"}}>{state.statXP.will}</span>
-                </div>
-                <XPBar xp={state.statXP.will} color="#ffd600" glow="rgba(255,214,0,.5)" thin/>
-              </div>
-            </div>
+          {/* ══ DASHBOARD ═══════════════════════════════════════ */}
+          {view==="dashboard"&&(
+            <div className="fade" style={{padding:isDesktop?"28px 32px 0":"20px 16px 0"}}>
 
-            {decayAlerts.length>0&&(
-              <div style={{background:"rgba(255,23,68,.06)",border:"1px solid rgba(255,23,68,.25)",borderRadius:8,padding:"10px 13px",marginBottom:14}}>
-                <div style={{fontSize:8,color:"#ff1744",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:7}}>⚠ SYSTEM ALERT</div>
-                {decayAlerts.map(k=>{
-                  const cfg=STAT_CONFIG[k],ds=decayStatus(k,state.lastActivity);
-                  return <div key={k} onClick={()=>{setActiveStat(k);setView("tasks");}} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:4}}>
-                    <span style={{fontSize:12}}>{cfg.icon}</span>
-                    <span style={{fontSize:11,color:"#ccc",fontWeight:600,flex:1}}>{cfg.name}</span>
-                    <span className="dp" style={{fontSize:9,color:ds.status==="warn"?"#ff8c00":"#ff1744",fontFamily:"'Orbitron',monospace"}}>{ds.status==="warn"?"DECAY TOMORROW":"DECAYING"} →</span>
-                  </div>;
-                })}
-              </div>
-            )}
-
-            <div style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:8,padding:"10px 13px",marginBottom:14,display:"flex",alignItems:"center",gap:9}}>
-              <span style={{fontSize:16}}>🌙</span>
-              <div style={{flex:1}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#ccc",letterSpacing:.6}}>SLEEP</div>
-                <div style={{fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginTop:1}}>{sleepToday?`${sleepToday.hours}h · +${sleepToday.xp} Health XP`:"Not logged today"}</div>
-              </div>
-              <button onClick={()=>setView("sleep")} style={{background:"rgba(41,121,255,.1)",border:"1px solid rgba(41,121,255,.3)",color:"#2979ff",borderRadius:4,padding:"4px 11px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,letterSpacing:1}}>{sleepToday?"EDIT":"LOG"}</button>
-            </div>
-
-            <div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:9}}>── STATS ──────────────────</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
-              {statKeys.map(key=>{
-                const cfg=STAT_CONFIG[key],xp=state.statXP[key],lvl=getLevel(xp);
-                const ds=decayStatus(key,state.lastActivity);
-                const dc=ds.status==="warn"?"#ff8c00":ds.status==="decay"?"#ff1744":"transparent";
-                return (
-                  <div key={key} className="sc" style={{background:"linear-gradient(135deg,#0d0d1a,#0a0a12)",border:`1px solid ${ds.status!=="safe"?dc:"rgba(255,255,255,.07)"}`,borderRadius:8,padding:"12px 13px",position:"relative",overflow:"hidden",boxShadow:ds.status!=="safe"?`0 0 14px ${dc}33`:"none"}}>
-                    {ds.status!=="safe"&&<div className="dp" style={{position:"absolute",top:5,right:7,fontSize:7,color:dc,fontFamily:"'Orbitron',monospace"}}>{ds.status==="warn"?"⚠ SOON":"▼ -20/d"}</div>}
-                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
-                      <span style={{fontSize:16,cursor:"pointer"}} onClick={()=>setStatDetail(key)}>{cfg.icon}</span>
-                      <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setStatDetail(key)}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#ddd",letterSpacing:.7,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cfg.name.toUpperCase()}</div>
-                      </div>
-                      <button onClick={()=>setLevelTable({xp,color:cfg.color,glow:cfg.glow,name:cfg.name})} style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:cfg.color,background:"transparent",border:"none",cursor:"pointer",padding:0,flexShrink:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>Lv{lvl} ↗</button>
+              {/* Desktop page header */}
+              {isDesktop&&(
+                <div style={{marginBottom:24,paddingBottom:16,borderBottom:"1px solid rgba(255,255,255,.05)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+                    <div>
+                      <div style={{fontFamily:"'Orbitron',monospace",fontSize:20,fontWeight:900,color:"#fff",letterSpacing:2}}>DASHBOARD</div>
+                      <div style={{fontSize:10,color:"#2a2a3a",fontFamily:"'Share Tech Mono',monospace",marginTop:3}}>{new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</div>
                     </div>
-                    <div onClick={()=>setStatDetail(key)}><XPBar xp={xp} color={cfg.color} glow={cfg.glow} thin={false}/></div>
-                    <button onClick={()=>{setActiveStat(key);setView("tasks");}} style={{marginTop:8,width:"100%",background:`${cfg.color}11`,border:`1px solid ${cfg.color}22`,color:cfg.color,borderRadius:4,padding:"4px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,letterSpacing:.5}}>TASKS →</button>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Remaining today */}
-            {(()=>{
-              const remaining=statKeys.flatMap(key=>getStatTasks(key).filter(t=>!todayDone[t.id]).map(t=>({...t,stat:key})));
-              const sleepPending=!sleepToday;
-              const totalLeft=remaining.length+(sleepPending?1:0);
-              return (
-                <div style={{marginTop:20,paddingBottom:8}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2}}>── REMAINING TODAY ────────</div>
-                    <div style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:totalLeft===0?"#00e676":totalLeft<=5?"#ff8c00":"#555"}}>{totalLeft===0?"✓ ALL DONE":`${totalLeft} LEFT`}</div>
-                  </div>
-                  {totalLeft===0?(
-                    <div style={{background:"rgba(0,230,118,.04)",border:"1px solid rgba(0,230,118,.14)",borderRadius:10,padding:"18px",textAlign:"center"}}>
-                      <div style={{fontSize:22,marginBottom:6}}>⚔️</div>
-                      <div style={{fontFamily:"'Orbitron',monospace",fontSize:10,color:"#00e676",letterSpacing:1}}>ALL TASKS COMPLETE</div>
-                      <div style={{fontSize:9,color:"#2a2a3a",fontFamily:"'Share Tech Mono',monospace",marginTop:4}}>Will XP maximized</div>
-                    </div>
-                  ):(
-                    <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                      {sleepPending&&(
-                        <div style={{background:"#0d0d1a",border:"1px solid rgba(255,64,129,.2)",borderRadius:8,padding:"10px 12px",display:"flex",alignItems:"center",gap:9}}>
-                          <span>🌙</span>
-                          <div style={{flex:1}}><div style={{fontSize:12,color:"#ccc",fontWeight:600}}>Log last night's sleep</div></div>
-                          <button onClick={()=>setView("sleep")} style={{background:"rgba(255,64,129,.12)",border:"1px solid rgba(255,64,129,.3)",color:"#ff4081",borderRadius:4,padding:"5px 10px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,flexShrink:0}}>LOG</button>
-                        </div>
-                      )}
-                      {statKeys.map(key=>{
-                        const sp=remaining.filter(t=>t.stat===key);
-                        if(!sp.length) return null;
-                        const cfg=STAT_CONFIG[key];
-                        return (
-                          <div key={key} style={{background:"#0d0d1a",border:`1px solid ${cfg.color}1a`,borderRadius:8,overflow:"hidden"}}>
-                            <div onClick={()=>{setActiveStat(key);setView("tasks");}} style={{display:"flex",alignItems:"center",gap:7,padding:"8px 12px",borderBottom:"1px solid rgba(255,255,255,.05)",cursor:"pointer",background:`${cfg.color}08`}}>
-                              <span style={{fontSize:12}}>{cfg.icon}</span>
-                              <span style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:cfg.color,letterSpacing:.8,fontWeight:700,flex:1}}>{cfg.name.toUpperCase()}</span>
-                              <span style={{fontSize:9,color:"#333"}}>→</span>
-                            </div>
-                            {sp.map((task,i)=>{
-                              const sel=rankSel[task.id]||task.rank;
-                              return (
-                                <div key={task.id} className="tr" style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderBottom:i<sp.length-1?"1px solid rgba(255,255,255,.04)":"none",transition:"background .14s"}}>
-                                  <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:"#bbb",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</div></div>
-                                  <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0}}>
-                                    {["E","B","S"].map(r=><RP key={r} rank={r} sel={sel===r} onClick={()=>setRankSel(p=>({...p,[task.id]:r}))}/>)}
-                                    <button className="pb" onClick={()=>completeTask(task.id,task.name,key,sel,task.isCustom||false)} style={{background:`linear-gradient(135deg,${cfg.color}99,${cfg.color})`,color:"#000",border:"none",borderRadius:4,padding:"5px 10px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,fontWeight:700,boxShadow:`0 0 7px ${cfg.glow}`,marginLeft:2}}>+{TASK_XP[sel]}</button>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        )}
-
-        {/* ══ TASKS ══════════════════════════════════════════════ */}
-        {view==="tasks"&&activeStat&&(()=>{
-          const cfg=STAT_CONFIG[activeStat];
-          const allT=getStatTasks(activeStat);
-          const pending=allT.filter(t=>!todayDone[t.id]);
-          const done=allT.filter(t=>!!todayDone[t.id]);
-          const habits=getStatHabits(activeStat);
-          return (
-            <div className="fade" style={{padding:"20px 16px 0"}}>
-              <button onClick={()=>setView("dashboard")} style={{background:"transparent",border:"none",color:"#444",cursor:"pointer",fontSize:12,marginBottom:12,display:"flex",alignItems:"center",gap:5,fontFamily:"'Rajdhani',sans-serif"}}>← Back</button>
-
-              {/* Stat header */}
-              <div style={{background:`linear-gradient(135deg,${cfg.color}0e,#0a0a12)`,border:`1px solid ${cfg.color}30`,borderRadius:11,padding:"14px",marginBottom:16,boxShadow:`0 0 18px ${cfg.glow}`}}>
-                <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:9}}>
-                  <span style={{fontSize:20}}>{cfg.icon}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"'Orbitron',monospace",fontSize:14,fontWeight:700,color:"#fff",letterSpacing:1.2}}>{cfg.name.toUpperCase()}</div>
-                    <button onClick={()=>setLevelTable({xp:state.statXP[activeStat],color:cfg.color,glow:cfg.glow,name:cfg.name})} style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:cfg.color,background:"transparent",border:"none",cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>
-                      LVL {getLevel(state.statXP[activeStat])} · {STAT_TITLES[getLevel(state.statXP[activeStat])-1]} · {state.statXP[activeStat]} XP ↗
-                    </button>
-                  </div>
-                </div>
-                <XPBar xp={state.statXP[activeStat]} color={cfg.color} glow={cfg.glow} thin={false}/>
-                <div style={{marginTop:6,fontSize:8,color:"#2a2a3a",fontFamily:"'Share Tech Mono',monospace"}}>
-                  Last: {state.lastActivity[activeStat]?`${daysSince(state.lastActivity[activeStat])}d ago`:"Never"} · {(()=>{const ds=decayStatus(activeStat,state.lastActivity);return ds.status==="safe"?<span style={{color:"#00e676"}}>✓ Safe {ds.daysLeft}d</span>:ds.status==="warn"?<span style={{color:"#ff8c00"}}>⚠ Decay tomorrow</span>:<span style={{color:"#ff1744"}}>▼ Decaying</span>;})()}
-                </div>
-              </div>
-
-              {/* Daily tasks */}
-              {(pending.length>0||done.length>0)&&<div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:9}}>── DAILY TASKS ────────────</div>}
-
-              {pending.length>0&&(
-                <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
-                  {pending.map(task=>{
-                    const sel=rankSel[task.id]||task.rank;
-                    return (
-                      <div key={task.id} className="tr" style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:8,padding:"11px 12px",transition:"background .14s"}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:9}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,color:"#ccc",fontWeight:600,lineHeight:1.35,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</div>
-                            {task.isCustom&&<div style={{fontSize:8,color:"#2a2a3a",fontFamily:"'Orbitron',monospace",marginTop:1}}>CUSTOM</div>}
-                          </div>
-                          <div style={{display:"flex",gap:5,flexShrink:0}}>
-                            <button onClick={()=>setEditTarget({id:task.id,currentName:task.name,isCustom:task.isCustom,isHabit:false})} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>✏️</button>
-                            <button onClick={()=>deleteTask(task)} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>🗑</button>
-                          </div>
-                        </div>
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:7}}>
-                          <div style={{display:"flex",gap:5}}>{["E","B","S"].map(r=><RP key={r} rank={r} sel={sel===r} onClick={()=>setRankSel(p=>({...p,[task.id]:r}))}/>)}</div>
-                          <button className="pb" onClick={()=>completeTask(task.id,task.name,activeStat,sel,task.isCustom||false)} style={{background:`linear-gradient(135deg,${cfg.color}99,${cfg.color})`,color:"#000",border:"none",borderRadius:4,padding:"6px 13px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:9,fontWeight:700,letterSpacing:1,boxShadow:`0 0 9px ${cfg.glow}`,flexShrink:0}}>+{TASK_XP[sel]} XP</button>
-                        </div>
+                    <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                      {/* Sleep status chip */}
+                      <div onClick={()=>setView("sleep")} style={{background:"rgba(255,64,129,.08)",border:"1px solid rgba(255,64,129,.2)",borderRadius:6,padding:"6px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:7,transition:"all .15s"}}>
+                        <span style={{fontSize:12}}>🌙</span>
+                        <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:sleepToday?"#ff4081":"#444"}}>{sleepToday?`${sleepToday.hours}h sleep · +${sleepToday.xp}xp`:"Log sleep →"}</span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {done.length>0&&(
-                <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
-                  {done.map(task=>(
-                    <div key={task.id} style={{background:"rgba(0,230,118,.03)",border:"1px solid rgba(0,230,118,.18)",borderRadius:8,padding:"9px 12px",display:"flex",alignItems:"center",gap:9,opacity:.65}}>
-                      <span style={{color:"#00e676",fontSize:12}}>✓</span>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:12,color:"#777",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</div>
-                        <div style={{fontSize:8,color:"#00e676",fontFamily:"'Share Tech Mono',monospace",marginTop:1}}>+{TASK_XP[todayDone[task.id]]} XP · {todayDone[task.id]}-RANK</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Add task button */}
-              <button onClick={()=>setCreateMode("task")} style={{width:"100%",background:"rgba(255,255,255,.02)",border:"1px dashed rgba(255,255,255,.1)",borderRadius:8,padding:"10px",cursor:"pointer",color:"#333",fontFamily:"'Orbitron',monospace",fontSize:9,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:7,marginBottom:20,transition:"all .15s"}}>
-                <span style={{fontSize:14,color:"rgba(255,255,255,.15)"}}>＋</span> ADD CUSTOM TASK
-              </button>
-
-              {/* HABITS SECTION */}
-              <div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:9}}>── HABITS ─────────────────</div>
-              <div style={{background:"rgba(255,214,0,.04)",border:"1px solid rgba(255,214,0,.12)",borderRadius:8,padding:"9px 12px",marginBottom:12}}>
-                <div style={{fontSize:10,color:"#ffd600",fontFamily:"'Share Tech Mono',monospace",lineHeight:1.5}}>
-                  🔁 Habits can be logged as many times as you do them. Each log gives XP and is saved.
-                </div>
-              </div>
-
-              {habits.length===0&&(
-                <div style={{textAlign:"center",padding:"16px 0",color:"#2a2a3a",fontSize:11,fontFamily:"'Share Tech Mono',monospace",marginBottom:12}}>
-                  No habits yet — add your first one below.
-                </div>
-              )}
-
-              {habits.length>0&&(
-                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
-                  {habits.map(habit=>{
-                    const countToday=habitCountToday(habit.id);
-                    const isPopping=(habitPops[habit.id]||0)>0;
-                    return (
-                      <div key={habit.id} style={{background:"#0d0d1a",border:"1px solid rgba(255,214,0,.15)",borderRadius:10,padding:"12px 13px"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontSize:13,color:"#ddd",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{habit.name}</div>
-                            <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
-                              <span style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:"#ffd600",letterSpacing:.5}}>{habit.rank}-RANK · +{TASK_XP[habit.rank]} XP</span>
-                              {countToday>0&&<span style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:"#ffd600",background:"rgba(255,214,0,.12)",border:"1px solid rgba(255,214,0,.25)",borderRadius:10,padding:"1px 7px",animation:isPopping?"pop .25s":"none"}}>×{countToday} today</span>}
-                            </div>
+              {/* Mobile character card */}
+              {!isDesktop&&(
+                <div className="bp" style={{background:"linear-gradient(135deg,#0d0d2a,#0a0a18)",border:"1px solid rgba(41,121,255,.25)",borderRadius:12,padding:18,marginBottom:16,position:"relative",overflow:"hidden",boxShadow:"0 0 28px rgba(41,121,255,.1)"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#2979ff,transparent)"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div className="float" style={{fontSize:32,lineHeight:1,filter:"drop-shadow(0 0 8px rgba(41,121,255,.5))"}}>{CHAR_ICONS[ovLvl-1]}</div>
+                      <div>
+                        {editName_?(
+                          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                            <input value={nameInput} onChange={e=>setNameInput(e.target.value)} autoFocus
+                              onKeyDown={e=>{if(e.key==="Enter"){setState(p=>({...p,name:nameInput||p.name}));setEditName_(false);}}}
+                              style={{background:"rgba(255,255,255,.05)",border:"1px solid #2979ff",borderRadius:4,color:"#fff",padding:"4px 8px",fontFamily:"'Orbitron',monospace",fontSize:12,width:110,outline:"none"}}/>
+                            <button onClick={()=>{setState(p=>({...p,name:nameInput||p.name}));setEditName_(false);}} style={{background:"#2979ff",color:"#fff",border:"none",borderRadius:4,padding:"4px 9px",cursor:"pointer",fontSize:9,fontFamily:"'Orbitron',monospace"}}>SET</button>
                           </div>
-                          <div style={{display:"flex",gap:5,flexShrink:0}}>
-                            <button onClick={()=>setEditTarget({...habit,currentName:habit.name})} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>✏️</button>
-                            <button onClick={()=>deleteTask(habit)} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>🗑</button>
+                        ):(
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{fontFamily:"'Orbitron',monospace",fontSize:17,fontWeight:900,color:"#fff",letterSpacing:2}}>{state.name}</div>
+                            <button onClick={()=>{setNameInput(state.name);setEditName_(true);}} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:10,padding:0}}>✏️</button>
                           </div>
-                        </div>
-                        <button className="habit-btn" onClick={()=>logHabit(habit)} style={{
-                          width:"100%",
-                          background:`linear-gradient(135deg,rgba(255,214,0,.15),rgba(255,214,0,.25))`,
-                          border:"1px solid rgba(255,214,0,.4)",
-                          color:"#ffd600",borderRadius:7,padding:"10px",cursor:"pointer",
-                          fontFamily:"'Orbitron',monospace",fontSize:11,fontWeight:700,letterSpacing:1,
-                          boxShadow:"0 0 12px rgba(255,214,0,.15)",
-                          display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-                          transform:isPopping?"scale(.97)":"scale(1)",
-                        }}>
-                          <span style={{fontSize:14}}>🔁</span>
-                          LOG +{TASK_XP[habit.rank]} XP
-                          {countToday>0&&<span style={{fontSize:9,opacity:.7}}>({countToday}x done)</span>}
+                        )}
+                        <button onClick={()=>setLevelTable({xp:0,color:"#2979ff",glow:"rgba(41,121,255,0.5)",name:"Overall Level"})} style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:"#2979ff",letterSpacing:1.5,marginTop:2,background:"transparent",border:"none",cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>
+                          {CHAR_TITLES[ovLvl-1].toUpperCase()} ↗
                         </button>
                       </div>
-                    );
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontFamily:"'Orbitron',monospace",fontSize:34,fontWeight:900,color:"#ffd600",lineHeight:1,textShadow:"0 0 18px rgba(255,214,0,.55)"}}>{ovLvl}</div>
+                      <div style={{fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace"}}>OVERALL LVL</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:8,marginBottom:12}}>
+                    {[[streak>0?"🔥":"💤",`${streak}d streak`,streak>0?"#ff8c00":"#333"],["⚡",`+${xpToday} XP today`,"#ffd600"]].map(([icon,label,c])=>(
+                      <div key={label} style={{flex:1,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.06)",borderRadius:6,padding:"6px 8px",display:"flex",alignItems:"center",gap:5}}>
+                        <span style={{fontSize:12}}>{icon}</span>
+                        <span style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:c}}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{marginBottom:11}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:4}}>
+                      <span>TODAY · {totalFed}/9 STATS FED</span>
+                      <span style={{color:totalFed>=8?"#ffd600":totalFed>=6?"#00e676":totalFed>=4?"#ff8c00":"#333"}}>WILL +{totalFed>=8?60:totalFed>=6?35:totalFed>=4?15:0}</span>
+                    </div>
+                    <div style={{display:"flex",gap:3}}>
+                      {[...statKeys,"sleep"].map((k,i)=>{
+                        const fed=k==="sleep"?!!sleepToday:(state.taskLog||[]).some(t=>t.date===today&&t.stat===k&&!t.isHabit);
+                        return <div key={i} style={{flex:1,height:4,borderRadius:2,background:fed?"#2979ff":"rgba(255,255,255,.06)",boxShadow:fed?"0 0 5px #2979ff":"none",transition:"all .3s"}}/>;
+                      })}
+                    </div>
+                  </div>
+                  <div style={{paddingTop:11,borderTop:"1px solid rgba(255,255,255,.05)"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:5}}>
+                      <span style={{fontSize:13}}>👁️</span>
+                      <button onClick={()=>setLevelTable({xp:state.statXP.will,color:"#ffd600",glow:"rgba(255,214,0,0.5)",name:"Will"})} style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:"#ffd600",letterSpacing:.8,flex:1,background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>
+                        WILL — LVL {getLevel(state.statXP.will)} · {STAT_TITLES[getLevel(state.statXP.will)-1]} ↗
+                      </button>
+                      <span style={{fontFamily:"'Orbitron',monospace",fontSize:11,fontWeight:700,color:"#ffd600",textShadow:"0 0 8px rgba(255,214,0,.5)"}}>{state.statXP.will}</span>
+                    </div>
+                    <XPBar xp={state.statXP.will} color="#ffd600" glow="rgba(255,214,0,.5)" thin/>
+                  </div>
+                </div>
+              )}
+
+              {/* Decay alerts — mobile only (desktop has sidebar) */}
+              {!isDesktop&&decayAlerts.length>0&&(
+                <div style={{background:"rgba(255,23,68,.06)",border:"1px solid rgba(255,23,68,.25)",borderRadius:8,padding:"10px 13px",marginBottom:14}}>
+                  <div style={{fontSize:8,color:"#ff1744",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:7}}>⚠ SYSTEM ALERT</div>
+                  {decayAlerts.map(k=>{
+                    const cfg=STAT_CONFIG[k],ds=decayStatus(k,state.lastActivity);
+                    return <div key={k} onClick={()=>{setActiveStat(k);setView("tasks");}} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",marginBottom:4}}>
+                      <span style={{fontSize:12}}>{cfg.icon}</span>
+                      <span style={{fontSize:11,color:"#ccc",fontWeight:600,flex:1}}>{cfg.name}</span>
+                      <span className="dp" style={{fontSize:9,color:ds.status==="warn"?"#ff8c00":"#ff1744",fontFamily:"'Orbitron',monospace"}}>{ds.status==="warn"?"DECAY TOMORROW":"DECAYING"} →</span>
+                    </div>;
                   })}
                 </div>
               )}
 
-              <button onClick={()=>setCreateMode("habit")} style={{width:"100%",background:"rgba(255,214,0,.04)",border:"1px dashed rgba(255,214,0,.2)",borderRadius:8,padding:"10px",cursor:"pointer",color:"#ffd60099",fontFamily:"'Orbitron',monospace",fontSize:9,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .15s"}}>
-                <span style={{fontSize:14,color:"rgba(255,214,0,.2)"}}>＋</span> ADD HABIT
-              </button>
-            </div>
-          );
-        })()}
-
-        {/* ══ SLEEP ══════════════════════════════════════════════ */}
-        {view==="sleep"&&(
-          <div className="fade" style={{padding:"20px 16px 0"}}>
-            <button onClick={()=>setView("dashboard")} style={{background:"transparent",border:"none",color:"#444",cursor:"pointer",fontSize:12,marginBottom:18,display:"flex",alignItems:"center",gap:5,fontFamily:"'Rajdhani',sans-serif"}}>← Back</button>
-            <div style={{fontFamily:"'Orbitron',monospace",fontSize:13,fontWeight:700,color:"#fff",letterSpacing:2,marginBottom:3}}>🌙 SLEEP LOG</div>
-            <div style={{fontSize:9,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:20}}>Adds XP to Health · resets daily</div>
-            <div style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:10,padding:18,marginBottom:12}}>
-              <div style={{fontSize:9,color:"#444",fontFamily:"'Orbitron',monospace",letterSpacing:1,marginBottom:9}}>HOURS SLEPT</div>
-              <input type="number" min="0" max="24" step="0.5" value={sleepInput} onChange={e=>setSleepInput(e.target.value)} placeholder="e.g. 7.5"
-                style={{width:"100%",background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.09)",borderRadius:6,color:"#fff",padding:"11px 13px",fontFamily:"'Orbitron',monospace",fontSize:20,textAlign:"center",outline:"none"}}/>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:12}}>
-                {[["8+ hrs","30 XP","#00e676"],["7-8 hrs","20 XP","#2979ff"],["6-7 hrs","10 XP","#ff8c00"],["< 6 hrs","0 XP","#2a2a3a"]].map(([label,xp,c])=>(
-                  <div key={label} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.05)",borderRadius:6,padding:"7px",textAlign:"center"}}>
-                    <div style={{fontFamily:"'Orbitron',monospace",fontSize:11,color:c,marginBottom:1}}>{xp}</div>
-                    <div style={{fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace"}}>{label}</div>
+              {/* Mobile sleep card */}
+              {!isDesktop&&(
+                <div style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:8,padding:"10px 13px",marginBottom:14,display:"flex",alignItems:"center",gap:9}}>
+                  <span style={{fontSize:16}}>🌙</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#ccc",letterSpacing:.6}}>SLEEP</div>
+                    <div style={{fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginTop:1}}>{sleepToday?`${sleepToday.hours}h · +${sleepToday.xp} Health XP`:"Not logged today"}</div>
                   </div>
-                ))}
+                  <button onClick={()=>setView("sleep")} style={{background:"rgba(41,121,255,.1)",border:"1px solid rgba(41,121,255,.3)",color:"#2979ff",borderRadius:4,padding:"4px 11px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,letterSpacing:1}}>{sleepToday?"EDIT":"LOG"}</button>
+                </div>
+              )}
+
+              {/* Stats section */}
+              {isDesktop&&(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2}}>── STATS ────────────────────────────────</div>
+                </div>
+              )}
+              {!isDesktop&&<div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:9}}>── STATS ──────────────────</div>}
+
+              <div style={{display:"grid",gridTemplateColumns:isDesktop?"repeat(3,1fr)":"1fr 1fr",gap:isDesktop?10:7}}>
+                {statKeys.map(key=>{
+                  const cfg=STAT_CONFIG[key],xp=state.statXP[key],lvl=getLevel(xp);
+                  const ds=decayStatus(key,state.lastActivity);
+                  const dc=ds.status==="warn"?"#ff8c00":ds.status==="decay"?"#ff1744":"transparent";
+                  return (
+                    <div key={key} className="sc" style={{background:"linear-gradient(135deg,#0d0d1a,#0a0a12)",border:`1px solid ${ds.status!=="safe"?dc:"rgba(255,255,255,.07)"}`,borderRadius:8,padding:isDesktop?"14px 15px":"12px 13px",position:"relative",overflow:"hidden",boxShadow:ds.status!=="safe"?`0 0 14px ${dc}33`:"none"}}>
+                      {ds.status!=="safe"&&<div className="dp" style={{position:"absolute",top:5,right:7,fontSize:7,color:dc,fontFamily:"'Orbitron',monospace"}}>{ds.status==="warn"?"⚠ SOON":"▼ -20/d"}</div>}
+                      <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:8}}>
+                        <span style={{fontSize:16,cursor:"pointer"}} onClick={()=>setStatDetail(key)}>{cfg.icon}</span>
+                        <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setStatDetail(key)}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#ddd",letterSpacing:.7,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{cfg.name.toUpperCase()}</div>
+                        </div>
+                        <button onClick={()=>setLevelTable({xp,color:cfg.color,glow:cfg.glow,name:cfg.name})} style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:cfg.color,background:"transparent",border:"none",cursor:"pointer",padding:0,flexShrink:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>Lv{lvl} ↗</button>
+                      </div>
+                      <div onClick={()=>setStatDetail(key)}><XPBar xp={xp} color={cfg.color} glow={cfg.glow} thin={false}/></div>
+                      <button onClick={()=>{setActiveStat(key);setView("tasks");}} style={{marginTop:8,width:"100%",background:`${cfg.color}11`,border:`1px solid ${cfg.color}22`,color:cfg.color,borderRadius:4,padding:"4px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,letterSpacing:.5}}>TASKS →</button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Remaining today */}
+              {(()=>{
+                const remaining=statKeys.flatMap(key=>getStatTasks(key).filter(t=>!todayDone[t.id]).map(t=>({...t,stat:key})));
+                const sleepPending=!sleepToday;
+                const totalLeft=remaining.length+(sleepPending?1:0);
+                return (
+                  <div style={{marginTop:isDesktop?28:20,paddingBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                      <div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2}}>── REMAINING TODAY {isDesktop?"────────────────────":"────────"}</div>
+                      <div style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:totalLeft===0?"#00e676":totalLeft<=5?"#ff8c00":"#555"}}>{totalLeft===0?"✓ ALL DONE":`${totalLeft} LEFT`}</div>
+                    </div>
+                    {totalLeft===0?(
+                      <div style={{background:"rgba(0,230,118,.04)",border:"1px solid rgba(0,230,118,.14)",borderRadius:10,padding:"18px",textAlign:"center"}}>
+                        <div style={{fontSize:22,marginBottom:6}}>⚔️</div>
+                        <div style={{fontFamily:"'Orbitron',monospace",fontSize:10,color:"#00e676",letterSpacing:1}}>ALL TASKS COMPLETE</div>
+                        <div style={{fontSize:9,color:"#2a2a3a",fontFamily:"'Share Tech Mono',monospace",marginTop:4}}>Will XP maximized</div>
+                      </div>
+                    ):(
+                      <div style={{
+                        display:isDesktop?"grid":"flex",
+                        gridTemplateColumns:isDesktop?"1fr 1fr":undefined,
+                        flexDirection:!isDesktop?"column":undefined,
+                        gap:isDesktop?10:5,
+                        alignItems:"start",
+                      }}>
+                        {sleepPending&&(
+                          <div style={{background:"#0d0d1a",border:"1px solid rgba(255,64,129,.2)",borderRadius:8,padding:"10px 12px",display:"flex",alignItems:"center",gap:9}}>
+                            <span>🌙</span>
+                            <div style={{flex:1}}><div style={{fontSize:12,color:"#ccc",fontWeight:600}}>Log last night's sleep</div></div>
+                            <button onClick={()=>setView("sleep")} style={{background:"rgba(255,64,129,.12)",border:"1px solid rgba(255,64,129,.3)",color:"#ff4081",borderRadius:4,padding:"5px 10px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,flexShrink:0}}>LOG</button>
+                          </div>
+                        )}
+                        {statKeys.map(key=>{
+                          const sp=remaining.filter(t=>t.stat===key);
+                          if(!sp.length) return null;
+                          const cfg=STAT_CONFIG[key];
+                          return (
+                            <div key={key} style={{background:"#0d0d1a",border:`1px solid ${cfg.color}1a`,borderRadius:8,overflow:"hidden"}}>
+                              <div onClick={()=>{setActiveStat(key);setView("tasks");}} style={{display:"flex",alignItems:"center",gap:7,padding:"8px 12px",borderBottom:"1px solid rgba(255,255,255,.05)",cursor:"pointer",background:`${cfg.color}08`}}>
+                                <span style={{fontSize:12}}>{cfg.icon}</span>
+                                <span style={{fontFamily:"'Orbitron',monospace",fontSize:9,color:cfg.color,letterSpacing:.8,fontWeight:700,flex:1}}>{cfg.name.toUpperCase()}</span>
+                                <span style={{fontSize:9,color:"#333"}}>→</span>
+                              </div>
+                              {sp.map((task,i)=>{
+                                const sel=rankSel[task.id]||task.rank;
+                                return (
+                                  <div key={task.id} className="tr" style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderBottom:i<sp.length-1?"1px solid rgba(255,255,255,.04)":"none",transition:"background .14s"}}>
+                                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:"#bbb",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</div></div>
+                                    <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0}}>
+                                      {["E","B","S"].map(r=><RP key={r} rank={r} sel={sel===r} onClick={()=>setRankSel(p=>({...p,[task.id]:r}))}/>)}
+                                      <button className="pb" onClick={()=>completeTask(task.id,task.name,key,sel,task.isCustom||false)} style={{background:`linear-gradient(135deg,${cfg.color}99,${cfg.color})`,color:"#000",border:"none",borderRadius:4,padding:"5px 10px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:8,fontWeight:700,boxShadow:`0 0 7px ${cfg.glow}`,marginLeft:2}}>+{TASK_XP[sel]}</button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ══ TASKS ════════════════════════════════════════════ */}
+          {view==="tasks"&&activeStat&&(()=>{
+            const cfg=STAT_CONFIG[activeStat];
+            const allT=getStatTasks(activeStat);
+            const pending=allT.filter(t=>!todayDone[t.id]);
+            const done=allT.filter(t=>!!todayDone[t.id]);
+            const habits=getStatHabits(activeStat);
+            return (
+              <div className="fade" style={{padding:isDesktop?"28px 32px 0":"20px 16px 0"}}>
+                {!isDesktop&&<button onClick={()=>setView("dashboard")} style={{background:"transparent",border:"none",color:"#444",cursor:"pointer",fontSize:12,marginBottom:12,display:"flex",alignItems:"center",gap:5,fontFamily:"'Rajdhani',sans-serif"}}>← Back</button>}
+                {isDesktop&&<button onClick={()=>setView("dashboard")} style={{background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#555",cursor:"pointer",fontSize:10,marginBottom:20,display:"inline-flex",alignItems:"center",gap:6,fontFamily:"'Orbitron',monospace",letterSpacing:.5,padding:"5px 12px",borderRadius:5}}>← BACK TO DASHBOARD</button>}
+
+                <div style={{background:`linear-gradient(135deg,${cfg.color}0e,#0a0a12)`,border:`1px solid ${cfg.color}30`,borderRadius:11,padding:isDesktop?"18px":"14px",marginBottom:16,boxShadow:`0 0 18px ${cfg.glow}`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:9,marginBottom:9}}>
+                    <span style={{fontSize:20}}>{cfg.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"'Orbitron',monospace",fontSize:14,fontWeight:700,color:"#fff",letterSpacing:1.2}}>{cfg.name.toUpperCase()}</div>
+                      <button onClick={()=>setLevelTable({xp:state.statXP[activeStat],color:cfg.color,glow:cfg.glow,name:cfg.name})} style={{fontFamily:"'Share Tech Mono',monospace",fontSize:9,color:cfg.color,background:"transparent",border:"none",cursor:"pointer",padding:0,textDecoration:"underline",textDecorationStyle:"dotted"}}>
+                        LVL {getLevel(state.statXP[activeStat])} · {STAT_TITLES[getLevel(state.statXP[activeStat])-1]} · {state.statXP[activeStat]} XP ↗
+                      </button>
+                    </div>
+                    {isDesktop&&(
+                      <div style={{textAlign:"right",flexShrink:0}}>
+                        <div style={{fontFamily:"'Orbitron',monospace",fontSize:22,fontWeight:900,color:cfg.color,lineHeight:1}}>{getLevel(state.statXP[activeStat])}</div>
+                        <div style={{fontSize:7,color:"#333",fontFamily:"'Share Tech Mono',monospace"}}>LVL</div>
+                      </div>
+                    )}
+                  </div>
+                  <XPBar xp={state.statXP[activeStat]} color={cfg.color} glow={cfg.glow} thin={false}/>
+                  <div style={{marginTop:6,fontSize:8,color:"#2a2a3a",fontFamily:"'Share Tech Mono',monospace"}}>
+                    Last: {state.lastActivity[activeStat]?`${daysSince(state.lastActivity[activeStat])}d ago`:"Never"} · {(()=>{const ds=decayStatus(activeStat,state.lastActivity);return ds.status==="safe"?<span style={{color:"#00e676"}}>✓ Safe {ds.daysLeft}d</span>:ds.status==="warn"?<span style={{color:"#ff8c00"}}>⚠ Decay tomorrow</span>:<span style={{color:"#ff1744"}}>▼ Decaying</span>;})()}
+                  </div>
+                </div>
+
+                {/* Two-column layout on desktop for tasks + habits */}
+                <div style={{display:isDesktop?"grid":"block",gridTemplateColumns:isDesktop?"1fr 1fr":undefined,gap:isDesktop?20:0,alignItems:"start"}}>
+
+                  {/* Daily tasks column */}
+                  <div>
+                    {(pending.length>0||done.length>0)&&<div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:9}}>── DAILY TASKS ────────────</div>}
+                    {pending.length>0&&(
+                      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
+                        {pending.map(task=>{
+                          const sel=rankSel[task.id]||task.rank;
+                          return (
+                            <div key={task.id} className="tr" style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:8,padding:"11px 12px",transition:"background .14s"}}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:9}}>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{fontSize:13,color:"#ccc",fontWeight:600,lineHeight:1.35,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</div>
+                                  {task.isCustom&&<div style={{fontSize:8,color:"#2a2a3a",fontFamily:"'Orbitron',monospace",marginTop:1}}>CUSTOM</div>}
+                                </div>
+                                <div style={{display:"flex",gap:5,flexShrink:0}}>
+                                  <button onClick={()=>setEditTarget({id:task.id,currentName:task.name,isCustom:task.isCustom,isHabit:false})} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>✏️</button>
+                                  <button onClick={()=>deleteTask(task)} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>🗑</button>
+                                </div>
+                              </div>
+                              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:7}}>
+                                <div style={{display:"flex",gap:5}}>{["E","B","S"].map(r=><RP key={r} rank={r} sel={sel===r} onClick={()=>setRankSel(p=>({...p,[task.id]:r}))}/>)}</div>
+                                <button className="pb" onClick={()=>completeTask(task.id,task.name,activeStat,sel,task.isCustom||false)} style={{background:`linear-gradient(135deg,${cfg.color}99,${cfg.color})`,color:"#000",border:"none",borderRadius:4,padding:"6px 13px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:9,fontWeight:700,letterSpacing:1,boxShadow:`0 0 9px ${cfg.glow}`,flexShrink:0}}>+{TASK_XP[sel]} XP</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {done.length>0&&(
+                      <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
+                        {done.map(task=>(
+                          <div key={task.id} style={{background:"rgba(0,230,118,.03)",border:"1px solid rgba(0,230,118,.18)",borderRadius:8,padding:"9px 12px",display:"flex",alignItems:"center",gap:9,opacity:.65}}>
+                            <span style={{color:"#00e676",fontSize:12}}>✓</span>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontSize:12,color:"#777",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.name}</div>
+                              <div style={{fontSize:8,color:"#00e676",fontFamily:"'Share Tech Mono',monospace",marginTop:1}}>+{TASK_XP[todayDone[task.id]]} XP · {todayDone[task.id]}-RANK</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <button onClick={()=>setCreateMode("task")} style={{width:"100%",background:"rgba(255,255,255,.02)",border:"1px dashed rgba(255,255,255,.1)",borderRadius:8,padding:"10px",cursor:"pointer",color:"#333",fontFamily:"'Orbitron',monospace",fontSize:9,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:7,marginBottom:isDesktop?0:20,transition:"all .15s"}}>
+                      <span style={{fontSize:14,color:"rgba(255,255,255,.15)"}}>＋</span> ADD CUSTOM TASK
+                    </button>
+                  </div>
+
+                  {/* Habits column */}
+                  <div style={{marginTop:isDesktop?0:0}}>
+                    <div style={{fontSize:8,color:"#222",fontFamily:"'Orbitron',monospace",letterSpacing:2,marginBottom:9,marginTop:isDesktop?0:20}}>── HABITS ─────────────────</div>
+                    <div style={{background:"rgba(255,214,0,.04)",border:"1px solid rgba(255,214,0,.12)",borderRadius:8,padding:"9px 12px",marginBottom:12}}>
+                      <div style={{fontSize:10,color:"#ffd600",fontFamily:"'Share Tech Mono',monospace",lineHeight:1.5}}>
+                        🔁 Habits can be logged as many times as you do them.
+                      </div>
+                    </div>
+                    {habits.length===0&&(
+                      <div style={{textAlign:"center",padding:"16px 0",color:"#2a2a3a",fontSize:11,fontFamily:"'Share Tech Mono',monospace",marginBottom:12}}>
+                        No habits yet.
+                      </div>
+                    )}
+                    {habits.length>0&&(
+                      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+                        {habits.map(habit=>{
+                          const countToday=habitCountToday(habit.id);
+                          const isPopping=(habitPops[habit.id]||0)>0;
+                          return (
+                            <div key={habit.id} style={{background:"#0d0d1a",border:"1px solid rgba(255,214,0,.15)",borderRadius:10,padding:"12px 13px"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{fontSize:13,color:"#ddd",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{habit.name}</div>
+                                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
+                                    <span style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:"#ffd600",letterSpacing:.5}}>{habit.rank}-RANK · +{TASK_XP[habit.rank]} XP</span>
+                                    {countToday>0&&<span style={{fontFamily:"'Orbitron',monospace",fontSize:8,color:"#ffd600",background:"rgba(255,214,0,.12)",border:"1px solid rgba(255,214,0,.25)",borderRadius:10,padding:"1px 7px",animation:isPopping?"pop .25s":"none"}}>×{countToday} today</span>}
+                                  </div>
+                                </div>
+                                <div style={{display:"flex",gap:5,flexShrink:0}}>
+                                  <button onClick={()=>setEditTarget({...habit,currentName:habit.name})} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>✏️</button>
+                                  <button onClick={()=>deleteTask(habit)} style={{background:"transparent",border:"none",color:"#2a2a3a",cursor:"pointer",fontSize:12,padding:0,lineHeight:1}}>🗑</button>
+                                </div>
+                              </div>
+                              <button className="habit-btn" onClick={()=>logHabit(habit)} style={{
+                                width:"100%",
+                                background:"linear-gradient(135deg,rgba(255,214,0,.15),rgba(255,214,0,.25))",
+                                border:"1px solid rgba(255,214,0,.4)",
+                                color:"#ffd600",borderRadius:7,padding:"10px",cursor:"pointer",
+                                fontFamily:"'Orbitron',monospace",fontSize:11,fontWeight:700,letterSpacing:1,
+                                boxShadow:"0 0 12px rgba(255,214,0,.15)",
+                                display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+                                transform:isPopping?"scale(.97)":"scale(1)",
+                              }}>
+                                <span style={{fontSize:14}}>🔁</span>
+                                LOG +{TASK_XP[habit.rank]} XP
+                                {countToday>0&&<span style={{fontSize:9,opacity:.7}}>({countToday}x)</span>}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <button onClick={()=>setCreateMode("habit")} style={{width:"100%",background:"rgba(255,214,0,.04)",border:"1px dashed rgba(255,214,0,.2)",borderRadius:8,padding:"10px",cursor:"pointer",color:"#ffd60099",fontFamily:"'Orbitron',monospace",fontSize:9,letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"all .15s"}}>
+                      <span style={{fontSize:14,color:"rgba(255,214,0,.2)"}}>＋</span> ADD HABIT
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ══ SLEEP ════════════════════════════════════════════ */}
+          {view==="sleep"&&(
+            <div className="fade" style={{padding:isDesktop?"28px 32px 0":"20px 16px 0"}}>
+              {!isDesktop&&<button onClick={()=>setView("dashboard")} style={{background:"transparent",border:"none",color:"#444",cursor:"pointer",fontSize:12,marginBottom:18,display:"flex",alignItems:"center",gap:5,fontFamily:"'Rajdhani',sans-serif"}}>← Back</button>}
+              {isDesktop&&<button onClick={()=>setView("dashboard")} style={{background:"transparent",border:"1px solid rgba(255,255,255,.08)",color:"#555",cursor:"pointer",fontSize:10,marginBottom:24,display:"inline-flex",alignItems:"center",gap:6,fontFamily:"'Orbitron',monospace",letterSpacing:.5,padding:"5px 12px",borderRadius:5}}>← BACK TO DASHBOARD</button>}
+              <div style={{maxWidth:isDesktop?520:"100%"}}>
+                <div style={{fontFamily:"'Orbitron',monospace",fontSize:isDesktop?18:13,fontWeight:700,color:"#fff",letterSpacing:2,marginBottom:3}}>🌙 SLEEP LOG</div>
+                <div style={{fontSize:9,color:"#333",fontFamily:"'Share Tech Mono',monospace",marginBottom:20}}>Adds XP to Health · resets daily</div>
+                <div style={{background:"#0d0d1a",border:"1px solid rgba(255,255,255,.07)",borderRadius:10,padding:18,marginBottom:12}}>
+                  <div style={{fontSize:9,color:"#444",fontFamily:"'Orbitron',monospace",letterSpacing:1,marginBottom:9}}>HOURS SLEPT</div>
+                  <input type="number" min="0" max="24" step="0.5" value={sleepInput} onChange={e=>setSleepInput(e.target.value)} placeholder="e.g. 7.5"
+                    style={{width:"100%",background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.09)",borderRadius:6,color:"#fff",padding:"11px 13px",fontFamily:"'Orbitron',monospace",fontSize:20,textAlign:"center",outline:"none"}}/>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginTop:12}}>
+                    {[["8+ hrs","30 XP","#00e676"],["7-8 hrs","20 XP","#2979ff"],["6-7 hrs","10 XP","#ff8c00"],["< 6 hrs","0 XP","#2a2a3a"]].map(([label,xp,c])=>(
+                      <div key={label} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.05)",borderRadius:6,padding:"7px",textAlign:"center"}}>
+                        <div style={{fontFamily:"'Orbitron',monospace",fontSize:11,color:c,marginBottom:1}}>{xp}</div>
+                        <div style={{fontSize:8,color:"#333",fontFamily:"'Share Tech Mono',monospace"}}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button className="pb" onClick={logSleep} style={{width:"100%",background:"linear-gradient(135deg,#2979ff99,#2979ff)",color:"#fff",border:"none",borderRadius:8,padding:"12px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:11,fontWeight:700,letterSpacing:2,boxShadow:"0 0 18px rgba(41,121,255,.3)"}}>LOG SLEEP</button>
+                {sleepToday&&<div style={{textAlign:"center",marginTop:11,fontSize:9,color:"#00e676",fontFamily:"'Share Tech Mono',monospace"}}>✓ Today: {sleepToday.hours}h · +{sleepToday.xp} Health XP</div>}
               </div>
             </div>
-            <button className="pb" onClick={logSleep} style={{width:"100%",background:"linear-gradient(135deg,#2979ff99,#2979ff)",color:"#fff",border:"none",borderRadius:8,padding:"12px",cursor:"pointer",fontFamily:"'Orbitron',monospace",fontSize:11,fontWeight:700,letterSpacing:2,boxShadow:"0 0 18px rgba(41,121,255,.3)"}}>LOG SLEEP</button>
-            {sleepToday&&<div style={{textAlign:"center",marginTop:11,fontSize:9,color:"#00e676",fontFamily:"'Share Tech Mono',monospace"}}>✓ Today: {sleepToday.hours}h · +{sleepToday.xp} Health XP</div>}
-          </div>
-        )}
+          )}
 
-        {view==="archive"&&<Archive taskLog={state.taskLog} sleepLog={state.sleepLog}/>}
+          {view==="archive"&&<Archive taskLog={state.taskLog} sleepLog={state.sleepLog} isDesktop={isDesktop}/>}
+        </div>
       </div>
 
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"100%",background:"rgba(7,7,16,.97)",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",padding:"8px 0 10px",zIndex:100,backdropFilter:"blur(12px)"}}>
-        {NAV.map(n=>(
-          <button key={n.id} className="nb" onClick={()=>n.id==="__reset"?setShowReset(true):setView(n.id)} style={{flex:1,background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"5px 0",borderRadius:5,transition:"background .14s"}}>
-            <span style={{fontSize:14}}>{n.icon}</span>
-            <span style={{fontFamily:"'Orbitron',monospace",fontSize:7,letterSpacing:.7,color:view===n.id&&n.id!=="__reset"?"#2979ff":n.id==="__reset"?"#333":"#2a2a3a",fontWeight:700,transition:"color .14s"}}>{n.label}</span>
-            {view===n.id&&n.id!=="__reset"&&<div style={{width:14,height:2,background:"#2979ff",borderRadius:1,boxShadow:"0 0 5px #2979ff",marginTop:1}}/>}
-          </button>
-        ))}
-      </div>
+      {/* Mobile bottom nav */}
+      {!isDesktop&&(
+        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"100%",background:"rgba(7,7,16,.97)",borderTop:"1px solid rgba(255,255,255,.06)",display:"flex",padding:"8px 0 10px",zIndex:100,backdropFilter:"blur(12px)"}}>
+          {[{id:"dashboard",label:"HOME",icon:"◈"},{id:"sleep",label:"SLEEP",icon:"🌙"},{id:"archive",label:"LOG",icon:"📜"},{id:"__reset",label:"RESET",icon:"⚙️"}].map(n=>(
+            <button key={n.id} className="nb" onClick={()=>n.id==="__reset"?setShowReset(true):setView(n.id)} style={{flex:1,background:"transparent",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"5px 0",borderRadius:5,transition:"background .14s"}}>
+              <span style={{fontSize:14}}>{n.icon}</span>
+              <span style={{fontFamily:"'Orbitron',monospace",fontSize:7,letterSpacing:.7,color:view===n.id&&n.id!=="__reset"?"#2979ff":n.id==="__reset"?"#333":"#2a2a3a",fontWeight:700,transition:"color .14s"}}>{n.label}</span>
+              {view===n.id&&n.id!=="__reset"&&<div style={{width:14,height:2,background:"#2979ff",borderRadius:1,boxShadow:"0 0 5px #2979ff",marginTop:1}}/>}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
