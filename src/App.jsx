@@ -23,83 +23,83 @@ const MAX_XP = XP_THRESHOLDS[NUM_LEVELS - 1]; // ≈ 1,000,000
 const TIERS = [
   {
     tier: 1, name: "Awakening",
-    names: ["Dormant","Stirring","Awakened","Aware","Kindled","Sparked","Lit","Burning","Rising","Ascending","Emerging","Ignited","Blazing","Unbound"],
+    names: ["Dormant","Stir","Awaken","Aware","Align","Focus","Stabilize","Ground","Center","Control","Hold","Rise","Expand","Awakened"],
   },
   {
     tier: 2, name: "Initiate",
-    names: ["Initiate","Novice","Apprentice","Student","Learner","Disciple","Seeker","Aspirant","Trainee","Initiate II","Pupil","Candidate","Adept I","Adept II"],
+    names: ["Entry","Start","Learn","Adapt","Train","Repeat","Build","Apply","Adjust","Refine","Commit","Endure","Lock-In","Initiated"],
   },
   {
     tier: 3, name: "Warrior",
-    names: ["Recruit","Footsoldier","Skirmisher","Fighter","Brawler","Warrior","Combatant","Challenger","Gladiator","Duelist","Battler","Blade","Iron Fist","Warbound"],
+    names: ["Stand","Move","Strike","Guard","Push","Drive","Clash","Resist","Break","Pressure","Advance","Overcome","Dominate","Warrior"],
   },
   {
     tier: 4, name: "Hunter",
-    names: ["Tracker","Scout","Hunter","Stalker","Ranger","Sentinel","Watcher","Predator","Pursuer","Shadow Hunter","Ghost","Specter","Silent Blade","Phantom"],
+    names: ["Track","Scan","Focus","Aim","Pursue","Close In","Mark","Lock","Engage","Chase","Corner","Capture","Execute","Hunter"],
   },
   {
     tier: 5, name: "Elite",
-    names: ["Proven","Tested","Hardened","Elite","Veteran","Seasoned","Tempered","Forged","Steeled","Iron-Willed","Unbroken","Resolute","Tenacious","Unyielding"],
+    names: ["Prove","Test","Harden","Sharpen","Clean","Refine","Perfect","Repeat","Stabilize","Strengthen","Elevate","Polish","Solidify","Elite"],
   },
   {
     tier: 6, name: "Champion",
-    names: ["Contender","Rival","Competitor","Challenger II","Victor","Conqueror","Champion","Triumphant","Dominant","Supreme","Peerless","Undefeated","Unstoppable","Inevitable"],
+    names: ["Compete","Challenge","Pressure","Push","Surge","Breakthrough","Rise","Hold","Lead","Dominate","Overtake","Conquer","Finish","Champion"],
   },
   {
     tier: 7, name: "Operative",
-    names: ["Agent","Operative","Handler","Specialist","Tactician","Strategist","Coordinator","Commander","Director","Officer","High Operative","Shadow Agent","Black Blade","Ghost Operative"],
+    names: ["Observe","Plan","Prepare","Execute","Adjust","Optimize","Control","Direct","Coordinate","Command","Lead","Override","Dominate","Operative"],
   },
   {
     tier: 8, name: "Shadow",
-    names: ["Shade","Dusk Walker","Nightfall","Umbra","Eclipse","Veil","Shroud","Darkness","Abyss Walker","Void Touched","Shadow Lord","Penumbra","Obsidian","The Dark"],
+    names: ["Fade","Quiet","Mask","Drift","Slip","Phase","Vanish","Blur","Distort","Erase","Reappear","Unseen","Untouched","Shadow"],
   },
   {
     tier: 9, name: "Master",
-    names: ["Apprentice Master","Journeyman","Craftsman","Expert","Sage","Scholar","Savant","Virtuoso","Maestro","Master","Grand Master","High Master","Arcane Master","True Master"],
+    names: ["Study","Understand","Apply","Refine","Optimize","Perfect","Internalize","Simplify","Execute","Repeat","Polish","Elevate","Mastery","Master"],
   },
   {
     tier: 10, name: "Monarch",
-    names: ["Noble","Baron","Count","Duke","Archduke","Prince","King","High King","Sovereign","Overlord","Emperor","Supreme Emperor","God-King","Eternal Monarch"],
+    names: ["Claim","Rule","Command","Direct","Control","Expand","Assert","Dominate","Oversee","Govern","Enforce","Crown","Reign","Monarch"],
   },
   {
     tier: 11, name: "Mythic",
-    names: ["Fabled","Legendary","Mythic","Ancient","Eternal","Timeless","Primordial","Undying","Immortal","Deathless","Everlasting","Unending","Infinite","Beyond Time"],
+    names: ["Echo","Whisper","Rise","Emerge","Ascend","Beyond","Shift","Expand","Eternal","Unbound","Limitless","Timeless","Mythic","Mythic"],
   },
   {
     tier: 12, name: "Celestial",
-    names: ["Starchild","Starborn","Celestial","Astral","Cosmic","Nebula","Supernova","Pulsar","Quasar","Galaxy","Universe","Multiversal","Omniversal","The Cosmos"],
+    names: ["Spark","Orbit","Align","Radiate","Shine","Expand","Illuminate","Ascend","Drift","Cosmic","Stellar","Infinite","Boundless","Celestial"],
   },
   {
     tier: 13, name: "Transcendent",
-    names: ["Beyond","Elevated","Ascended","Transcendent","Exalted","Sublime","Ineffable","Absolute","Boundless","Limitless","Formless","Shapeless","Voiceless","The Beyond"],
+    names: ["Detach","Release","Rise","Elevate","Shift","Expand","Dissolve","Reform","Beyond","Formless","Limitless","Weightless","Transcend","Transcendent"],
   },
   {
     tier: 14, name: "Divine",
-    names: ["Touched","Blessed","Chosen","Anointed","Sacred","Holy","Divine","Sanctified","Hallowed","Exalted II","Radiant","Luminous","Incandescent","The Light"],
+    names: ["Touch","Bless","Align","Purify","Radiate","Shine","Illuminate","Sanctify","Elevate","Ascend","Perfect","Harmonize","Holy","Divine"],
   },
   {
     tier: 15, name: "Abyssal",
-    names: ["Descended","Deep One","Abyssal","Void Child","Darkness Born","Chaos Seed","Entropy","Ruin","Destruction","Oblivion","The Null","Unmaking","Antithesis","The Void"],
+    names: ["Descend","Sink","Drift","Consume","Corrupt","Distort","Collapse","Ruin","Erase","Break","Unmake","Void","Null","Abyssal"],
   },
   {
     tier: 16, name: "Singularity",
-    names: ["Point","Origin","Nucleus","Core","Singularity","Event Horizon","Black Hole","Collapse","Convergence","Infinite Density","Unreachable","The Crux","The Axis","The One"],
+    names: ["Point","Focus","Condense","Compress","Collapse","Converge","Intensify","Stabilize","Hold","Expand","Distort","Bend","Unify","Singularity"],
   },
   {
     tier: 17, name: "Paradox",
-    names: ["Contradiction","Anomaly","Aberration","Paradox","Impossible","Unreal","Unwritten","Unchained","Uncreated","Unshaped","Unnamed","Unknowable","The Exception","The Breach"],
+    names: ["Glitch","Shift","Invert","Distort","Contradict","Break","Rewrite","Unmake","Reform","Loop","Fragment","Merge","Impossible","Paradox"],
   },
   {
     tier: 18, name: "Architect",
-    names: ["Dreamer","Builder","Shaper","Crafter","Designer","Architect","Creator","Sculptor","Weaver","Author","Narrator","The Writer","The Source","The Origin"],
+    names: ["Imagine","Design","Shape","Build","Refine","Construct","Form","Create","Adjust","Perfect","Complete","Expand","Origin","Architect"],
   },
   {
     tier: 19, name: "Absolute",
-    names: ["Near Absolute","Proto-Absolute","Pre-Absolute","Approaching","Almost","The Edge","The Precipice","The Summit","The Peak","The Final","The Last","The End","The Omega","Absolute"],
+    names: ["Approach","Near","Edge","Climb","Ascend","Peak","Hold","Stabilize","Beyond","Final","Complete","Total","Omega","Absolute"],
   },
   {
     tier: 20, name: "Transcendence",
-    names: ["Echo","Remnant","The Trace","The Mark","The Impression","The Will","The Truth","The Law","The Word","The Silence","The Everything","The Nothing","The All","Transcendence"],
+    names: ["Echo","Trace","Mark","Imprint","Will","Truth","Law","Word","Silence","All","Nothing","Infinite","Eternal","Transcendence"],
   },
 ];
 
