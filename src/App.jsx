@@ -1,14 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 
 // ── 240-LEVEL SYSTEM ─────────────────────────────────────────────────────────
-// Exponential curve: each level costs ~4.5% more XP than the previous
-// Level 1 threshold = 0, Level 2 costs ~50 XP, caps at cumulative ~1,000,000
-
 const NUM_LEVELS = 240;
-const BASE_XP = 48;        // XP cost of level 1→2
-const GROWTH  = 0.045;     // 4.5% growth per level
+const BASE_XP = 48;
+const GROWTH  = 0.045;
 
-// Build cumulative XP thresholds array (index 0 = level 1 starts at 0 XP)
 const XP_THRESHOLDS = (() => {
   const t = [0];
   for (let i = 1; i < NUM_LEVELS; i++) {
@@ -17,101 +13,34 @@ const XP_THRESHOLDS = (() => {
   }
   return t;
 })();
-const MAX_XP = XP_THRESHOLDS[NUM_LEVELS - 1]; // ≈ 1,000,000
+const MAX_XP = XP_THRESHOLDS[NUM_LEVELS - 1];
 
-// ── 20 TIERS × 14 LEVEL NAMES ────────────────────────────────────────────────
 const TIERS = [
-  {
-    tier: 1, name: "Awakening",
-    names: ["Dormant","Stir","Awaken","Aware","Align","Focus","Stabilize","Ground","Center","Control","Hold","Rise","Expand","Awakened"],
-  },
-  {
-    tier: 2, name: "Initiate",
-    names: ["Entry","Start","Learn","Adapt","Train","Repeat","Build","Apply","Adjust","Refine","Commit","Endure","Lock-In","Initiated"],
-  },
-  {
-    tier: 3, name: "Warrior",
-    names: ["Stand","Move","Strike","Guard","Push","Drive","Clash","Resist","Break","Pressure","Advance","Overcome","Dominate","Warrior"],
-  },
-  {
-    tier: 4, name: "Hunter",
-    names: ["Track","Scan","Focus","Aim","Pursue","Close In","Mark","Lock","Engage","Chase","Corner","Capture","Execute","Hunter"],
-  },
-  {
-    tier: 5, name: "Elite",
-    names: ["Prove","Test","Harden","Sharpen","Clean","Refine","Perfect","Repeat","Stabilize","Strengthen","Elevate","Polish","Solidify","Elite"],
-  },
-  {
-    tier: 6, name: "Champion",
-    names: ["Compete","Challenge","Pressure","Push","Surge","Breakthrough","Rise","Hold","Lead","Dominate","Overtake","Conquer","Finish","Champion"],
-  },
-  {
-    tier: 7, name: "Operative",
-    names: ["Observe","Plan","Prepare","Execute","Adjust","Optimize","Control","Direct","Coordinate","Command","Lead","Override","Dominate","Operative"],
-  },
-  {
-    tier: 8, name: "Shadow",
-    names: ["Fade","Quiet","Mask","Drift","Slip","Phase","Vanish","Blur","Distort","Erase","Reappear","Unseen","Untouched","Shadow"],
-  },
-  {
-    tier: 9, name: "Master",
-    names: ["Study","Understand","Apply","Refine","Optimize","Perfect","Internalize","Simplify","Execute","Repeat","Polish","Elevate","Mastery","Master"],
-  },
-  {
-    tier: 10, name: "Monarch",
-    names: ["Claim","Rule","Command","Direct","Control","Expand","Assert","Dominate","Oversee","Govern","Enforce","Crown","Reign","Monarch"],
-  },
-  {
-    tier: 11, name: "Mythic",
-    names: ["Echo","Whisper","Rise","Emerge","Ascend","Beyond","Shift","Expand","Eternal","Unbound","Limitless","Timeless","Mythic","Mythic"],
-  },
-  {
-    tier: 12, name: "Celestial",
-    names: ["Spark","Orbit","Align","Radiate","Shine","Expand","Illuminate","Ascend","Drift","Cosmic","Stellar","Infinite","Boundless","Celestial"],
-  },
-  {
-    tier: 13, name: "Transcendent",
-    names: ["Detach","Release","Rise","Elevate","Shift","Expand","Dissolve","Reform","Beyond","Formless","Limitless","Weightless","Transcend","Transcendent"],
-  },
-  {
-    tier: 14, name: "Divine",
-    names: ["Touch","Bless","Align","Purify","Radiate","Shine","Illuminate","Sanctify","Elevate","Ascend","Perfect","Harmonize","Holy","Divine"],
-  },
-  {
-    tier: 15, name: "Abyssal",
-    names: ["Descend","Sink","Drift","Consume","Corrupt","Distort","Collapse","Ruin","Erase","Break","Unmake","Void","Null","Abyssal"],
-  },
-  {
-    tier: 16, name: "Singularity",
-    names: ["Point","Focus","Condense","Compress","Collapse","Converge","Intensify","Stabilize","Hold","Expand","Distort","Bend","Unify","Singularity"],
-  },
-  {
-    tier: 17, name: "Paradox",
-    names: ["Glitch","Shift","Invert","Distort","Contradict","Break","Rewrite","Unmake","Reform","Loop","Fragment","Merge","Impossible","Paradox"],
-  },
-  {
-    tier: 18, name: "Architect",
-    names: ["Imagine","Design","Shape","Build","Refine","Construct","Form","Create","Adjust","Perfect","Complete","Expand","Origin","Architect"],
-  },
-  {
-    tier: 19, name: "Absolute",
-    names: ["Approach","Near","Edge","Climb","Ascend","Peak","Hold","Stabilize","Beyond","Final","Complete","Total","Omega","Absolute"],
-  },
-  {
-    tier: 20, name: "Transcendence",
-    names: ["Echo","Trace","Mark","Imprint","Will","Truth","Law","Word","Silence","All","Nothing","Infinite","Eternal","Transcendence"],
-  },
+  { tier: 1,  name: "Awakening",     names: ["Dormant","Stir","Awaken","Aware","Align","Focus","Stabilize","Ground","Center","Control","Hold","Rise","Expand","Awakened"] },
+  { tier: 2,  name: "Initiate",      names: ["Entry","Start","Learn","Adapt","Train","Repeat","Build","Apply","Adjust","Refine","Commit","Endure","Lock-In","Initiated"] },
+  { tier: 3,  name: "Warrior",       names: ["Stand","Move","Strike","Guard","Push","Drive","Clash","Resist","Break","Pressure","Advance","Overcome","Dominate","Warrior"] },
+  { tier: 4,  name: "Hunter",        names: ["Track","Scan","Focus","Aim","Pursue","Close In","Mark","Lock","Engage","Chase","Corner","Capture","Execute","Hunter"] },
+  { tier: 5,  name: "Elite",         names: ["Prove","Test","Harden","Sharpen","Clean","Refine","Perfect","Repeat","Stabilize","Strengthen","Elevate","Polish","Solidify","Elite"] },
+  { tier: 6,  name: "Champion",      names: ["Compete","Challenge","Pressure","Push","Surge","Breakthrough","Rise","Hold","Lead","Dominate","Overtake","Conquer","Finish","Champion"] },
+  { tier: 7,  name: "Operative",     names: ["Observe","Plan","Prepare","Execute","Adjust","Optimize","Control","Direct","Coordinate","Command","Lead","Override","Dominate","Operative"] },
+  { tier: 8,  name: "Shadow",        names: ["Fade","Quiet","Mask","Drift","Slip","Phase","Vanish","Blur","Distort","Erase","Reappear","Unseen","Untouched","Shadow"] },
+  { tier: 9,  name: "Master",        names: ["Study","Understand","Apply","Refine","Optimize","Perfect","Internalize","Simplify","Execute","Repeat","Polish","Elevate","Mastery","Master"] },
+  { tier: 10, name: "Monarch",       names: ["Claim","Rule","Command","Direct","Control","Expand","Assert","Dominate","Oversee","Govern","Enforce","Crown","Reign","Monarch"] },
+  { tier: 11, name: "Mythic",        names: ["Echo","Whisper","Rise","Emerge","Ascend","Beyond","Shift","Expand","Eternal","Unbound","Limitless","Timeless","Mythic","Mythic"] },
+  { tier: 12, name: "Celestial",     names: ["Spark","Orbit","Align","Radiate","Shine","Expand","Illuminate","Ascend","Drift","Cosmic","Stellar","Infinite","Boundless","Celestial"] },
+  { tier: 13, name: "Transcendent",  names: ["Detach","Release","Rise","Elevate","Shift","Expand","Dissolve","Reform","Beyond","Formless","Limitless","Weightless","Transcend","Transcendent"] },
+  { tier: 14, name: "Divine",        names: ["Touch","Bless","Align","Purify","Radiate","Shine","Illuminate","Sanctify","Elevate","Ascend","Perfect","Harmonize","Holy","Divine"] },
+  { tier: 15, name: "Abyssal",       names: ["Descend","Sink","Drift","Consume","Corrupt","Distort","Collapse","Ruin","Erase","Break","Unmake","Void","Null","Abyssal"] },
+  { tier: 16, name: "Singularity",   names: ["Point","Focus","Condense","Compress","Collapse","Converge","Intensify","Stabilize","Hold","Expand","Distort","Bend","Unify","Singularity"] },
+  { tier: 17, name: "Paradox",       names: ["Glitch","Shift","Invert","Distort","Contradict","Break","Rewrite","Unmake","Reform","Loop","Fragment","Merge","Impossible","Paradox"] },
+  { tier: 18, name: "Architect",     names: ["Imagine","Design","Shape","Build","Refine","Construct","Form","Create","Adjust","Perfect","Complete","Expand","Origin","Architect"] },
+  { tier: 19, name: "Absolute",      names: ["Approach","Near","Edge","Climb","Ascend","Peak","Hold","Stabilize","Beyond","Final","Complete","Total","Omega","Absolute"] },
+  { tier: 20, name: "Transcendence", names: ["Echo","Trace","Mark","Imprint","Will","Truth","Law","Word","Silence","All","Nothing","Infinite","Eternal","Transcendence"] },
 ];
 
-// Flat array of 240 level name strings
 const ALL_LEVEL_NAMES = TIERS.flatMap(t => t.names);
 
-// Character title = tier name for overall level
-const getCharTitle = (lvl) => {
-  const tierIdx = Math.min(Math.floor((lvl - 1) / 14), 19);
-  return TIERS[tierIdx].name;
-};
-
+const getCharTitle = (lvl) => TIERS[Math.min(Math.floor((lvl - 1) / 14), 19)].name;
 const CHAR_ICONS = ["👤","🌀","🗡️","⚔️","🔱","🌑","🏯","👑","✨","🌌","🔥","⚡","🌊","💀","🌸","🦋","🎭","🌺","🌈","🌟"];
 const getCharIcon = (lvl) => CHAR_ICONS[Math.min(Math.floor((lvl - 1) / 14), 19)];
 
@@ -155,6 +84,19 @@ const DEFAULT_TASKS = {
   soul:        [{ id: "sou1", name: "10 min meditation or prayer", rank: "E" }, { id: "sou2", name: "20-30 min meditation, journaling, or spiritual reading", rank: "B" }, { id: "sou3", name: "Deep inner work / extended meditation / Gita study", rank: "S" }],
 };
 
+const TIMEZONES = [
+  { label: "EST / New York",        value: "America/New_York" },
+  { label: "CST / Chicago",         value: "America/Chicago" },
+  { label: "MST / Denver",          value: "America/Denver" },
+  { label: "PST / Los Angeles",     value: "America/Los_Angeles" },
+  { label: "UTC",                   value: "UTC" },
+  { label: "GMT / London",          value: "Europe/London" },
+  { label: "CET / Paris",           value: "Europe/Paris" },
+  { label: "IST / Mumbai",          value: "Asia/Kolkata" },
+  { label: "JST / Tokyo",           value: "Asia/Tokyo" },
+  { label: "AEST / Sydney",         value: "Australia/Sydney" },
+];
+
 const SYSTEM_MSGS = {
   taskDone: ["The System acknowledges your effort.", "Strength is not given. It is taken.", "Your future self is watching.", "Each rep. Each session. Each day."],
   levelUp:  ["A new rank has been achieved.", "The System has recognized your growth.", "Power commensurate with your efforts.", "You have surpassed your former self."],
@@ -165,20 +107,34 @@ const getRand = type => SYSTEM_MSGS[type][Math.floor(Math.random() * SYSTEM_MSGS
 
 const getLevel = xp => {
   let lo = 0, hi = NUM_LEVELS - 1;
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1;
-    if (XP_THRESHOLDS[mid] <= xp) lo = mid; else hi = mid - 1;
-  }
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (XP_THRESHOLDS[mid] <= xp) lo = mid; else hi = mid - 1; }
   return lo + 1;
 };
+const getLevelName = lvl => ALL_LEVEL_NAMES[Math.min(lvl - 1, NUM_LEVELS - 1)];
+const getLevelTier = lvl => TIERS[Math.min(Math.floor((lvl - 1) / 14), 19)];
 
-const getLevelName  = lvl => ALL_LEVEL_NAMES[Math.min(lvl - 1, NUM_LEVELS - 1)];
-const getLevelTier  = lvl => TIERS[Math.min(Math.floor((lvl - 1) / 14), 19)];
+// ── TIMEZONE-AWARE DATE HELPERS ────────────────────────────────────────────
+const todayStrTZ = (tz) => {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  } catch { return new Date().toISOString().split("T")[0]; }
+};
 
-const todayStr  = () => new Date().toISOString().split("T")[0];
-const daysSince = d => !d ? 999 : Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
-const uid       = () => Math.random().toString(36).slice(2, 9);
-const daysAgo   = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().split("T")[0]; };
+const daysSinceTZ = (dateStr, tz) => {
+  if (!dateStr) return 999;
+  const today = todayStrTZ(tz);
+  const a = new Date(today + "T00:00:00"), b = new Date(dateStr + "T00:00:00");
+  return Math.floor((a - b) / 86400000);
+};
+
+const daysAgoTZ = (n, tz) => {
+  const today = todayStrTZ(tz);
+  const d = new Date(today + "T12:00:00");
+  d.setDate(d.getDate() - n);
+  return d.toISOString().split("T")[0];
+};
+
+const uid = () => Math.random().toString(36).slice(2, 9);
 
 function getLevelProgress(xp) {
   const lvl = getLevel(xp);
@@ -193,25 +149,24 @@ function getOverallLevel(statXP) {
   return Math.max(1, Math.floor(keys.reduce((s, k) => s + getLevel(statXP[k] || 0), 0) / keys.length));
 }
 
-function decayStatus(stat, lastActivity) {
-  const d = daysSince(lastActivity[stat]);
+function decayStatus(stat, lastActivity, tz) {
+  const d = daysSinceTZ(lastActivity[stat], tz);
   if (d <= GRACE_DAYS) return { status: "safe", daysLeft: GRACE_DAYS - d };
   if (d === GRACE_DAYS + 1) return { status: "warn", daysLeft: 0 };
   return { status: "decay", daysLeft: 0, daysOver: d - GRACE_DAYS };
 }
 
-function calcWillXP(taskLog, sleepLog) {
-  const today = todayStr();
-  const fed = new Set(taskLog.filter(t => t.date === today && t.stat !== "will").map(t => t.stat));
-  const sleep = sleepLog.find(s => s.date === today);
+function calcWillXP(taskLog, sleepLog, targetDate) {
+  const fed = new Set(taskLog.filter(t => t.date === targetDate && t.stat !== "will").map(t => t.stat));
+  const sleep = sleepLog.find(s => s.date === targetDate);
   const total = fed.size + (sleep ? 1 : 0);
   if (total >= 8) return 200; if (total >= 6) return 100; if (total >= 4) return 40; return 0;
 }
 
-function calcStreak(taskLog, sleepLog) {
+function calcStreak(taskLog, sleepLog, tz) {
   let streak = 0;
   for (let i = 0; i < 60; i++) {
-    const d = daysAgo(i);
+    const d = daysAgoTZ(i, tz);
     const fed = new Set(taskLog.filter(t => t.date === d && t.stat !== "will").map(t => t.stat)).size;
     const slept = sleepLog.find(s => s.date === d) ? 1 : 0;
     if (fed + slept >= 4) streak++; else if (i > 0) break;
@@ -219,13 +174,14 @@ function calcStreak(taskLog, sleepLog) {
   return streak;
 }
 
-function todayXP(taskLog, sleepLog) {
-  const today = todayStr();
+function todayXP(taskLog, sleepLog, tz) {
+  const today = todayStrTZ(tz);
   return taskLog.filter(t => t.date === today).reduce((s, t) => s + t.xp, 0) + ((sleepLog.find(s => s.date === today)?.xp) || 0);
 }
 
 const freshState = () => ({
   name: "Hunter",
+  timezone: "America/New_York",
   statXP: Object.fromEntries(Object.keys(STAT_CONFIG).map(k => [k, 0])),
   lastActivity: Object.fromEntries(Object.keys(STAT_CONFIG).map(k => [k, null])),
   taskLog: [],
@@ -234,6 +190,7 @@ const freshState = () => ({
   habits: [],
   hiddenTasks: [],
   taskNameOverrides: {},
+  taskNotes: {},
   lastDecayCheck: null,
 });
 
@@ -286,6 +243,9 @@ const injectStyles = () => {
     .snav-btn:hover{background:rgba(255,255,255,.05)!important;color:#aaa!important;}
     .stat-desc{color:#252538;transition:color .25s;font-size:11px;font-family:'Share Tech Mono',monospace;line-height:1.5;margin-top:8px;}
     .sc:hover .stat-desc{color:#5a5a7a;}
+    .notes-tip{display:none;position:absolute;bottom:calc(100% + 6px);left:0;right:0;background:#0d0d1a;border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:10px 12px;font-size:11px;color:#888;font-family:'Share Tech Mono',monospace;line-height:1.5;z-index:50;pointer-events:none;white-space:pre-wrap;}
+    .notes-wrap:hover .notes-tip{display:block;}
+    input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.4);cursor:pointer;}
     @media(max-width:900px){.stat-desc{color:#32324a!important;}}
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#070710}::-webkit-scrollbar-thumb{background:#1a1a2e;border-radius:2px}
   `;
@@ -310,14 +270,84 @@ const XPBar = ({ xp, color, glow, thin }) => {
   );
 };
 
+// ── DATE PICKER for past-day editing ────────────────────────────────────────
+const DateSelector = ({ selectedDate, onChange, tz, color }) => {
+  const today = todayStrTZ(tz);
+  // Build last 14 days
+  const dates = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today + "T12:00:00");
+    d.setDate(d.getDate() - i);
+    return d.toISOString().split("T")[0];
+  });
+
+  return (
+    <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+      <div style={{ fontSize: 9, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginRight: 4, flexShrink: 0 }}>DATE:</div>
+      <select
+        value={selectedDate}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          background: "#0d0d1a",
+          border: `1px solid ${color || "#2979ff"}44`,
+          borderRadius: 5,
+          color: selectedDate === today ? (color || "#2979ff") : "#ffd600",
+          padding: "5px 10px",
+          fontFamily: "'Share Tech Mono',monospace",
+          fontSize: 11,
+          cursor: "pointer",
+          outline: "none",
+        }}
+      >
+        {dates.map(d => (
+          <option key={d} value={d} style={{ background: "#0d0d1a", color: d === today ? "#fff" : "#ffd600" }}>
+            {d === today ? `TODAY (${d})` : d}
+          </option>
+        ))}
+      </select>
+      {selectedDate !== today && (
+        <div style={{ fontSize: 9, color: "#ff8c00", fontFamily: "'Orbitron',monospace", letterSpacing: 1, padding: "3px 8px", background: "rgba(255,140,0,.1)", border: "1px solid rgba(255,140,0,.25)", borderRadius: 4 }}>
+          EDITING PAST DAY
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── TIMEZONE MODAL ───────────────────────────────────────────────────────────
+const TimezoneModal = ({ current, onSave, onClose }) => {
+  const [sel, setSel] = useState(current || "America/New_York");
+  return (
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
+      <div className="slide" onClick={e => e.stopPropagation()} style={{ background: "#0d0d1a", border: "1px solid rgba(41,121,255,.3)", borderRadius: 12, padding: "24px 22px", width: "100%", maxWidth: 420, boxShadow: "0 0 40px rgba(41,121,255,.2)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: 1 }}>SET TIMEZONE</div>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#444", fontSize: 20, cursor: "pointer" }}>✕</button>
+        </div>
+        <div style={{ fontSize: 10, color: "#444", fontFamily: "'Share Tech Mono',monospace", marginBottom: 18, lineHeight: 1.5 }}>
+          Fixes date mismatches for daily task logging. Current: <span style={{ color: "#2979ff" }}>{current}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 20 }}>
+          {TIMEZONES.map(tz => (
+            <button key={tz.value} onClick={() => setSel(tz.value)} style={{ background: sel === tz.value ? "rgba(41,121,255,.15)" : "rgba(255,255,255,.02)", border: `1px solid ${sel === tz.value ? "#2979ff" : "rgba(255,255,255,.07)"}`, borderRadius: 7, padding: "11px 14px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all .13s" }}>
+              <span style={{ fontFamily: "'Rajdhani',sans-serif", fontSize: 14, color: sel === tz.value ? "#fff" : "#777", fontWeight: 600 }}>{tz.label}</span>
+              <span style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 9, color: sel === tz.value ? "#2979ff" : "#333" }}>{tz.value}</span>
+            </button>
+          ))}
+        </div>
+        <button onClick={() => onSave(sel)} style={{ width: "100%", background: "linear-gradient(135deg,#2979ff99,#2979ff)", color: "#fff", border: "none", borderRadius: 8, padding: "13px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 11, fontWeight: 700, letterSpacing: 1.5 }}>
+          SAVE TIMEZONE
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ── LEVEL TABLE (240 levels) ─────────────────────────────────────────────────
 const LevelTable = ({ currentXP, color, glow, statName, onClose }) => {
   const curLvl = getLevel(currentXP);
   const [showTier, setShowTier] = useState(getLevelTier(curLvl).tier);
-
   const tier = TIERS[showTier - 1];
   const tierStartLvl = (showTier - 1) * 14 + 1;
-
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", zIndex: 400, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
       <div className="slide" onClick={e => e.stopPropagation()} style={{ background: "#0a0a14", border: `1px solid ${color}44`, borderRadius: 12, padding: "24px 20px", width: "100%", maxWidth: 500, maxHeight: "88vh", overflow: "auto", boxShadow: `0 0 40px ${glow}` }}>
@@ -328,48 +358,29 @@ const LevelTable = ({ currentXP, color, glow, statName, onClose }) => {
           </div>
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#444", fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
-
-        {/* Tier selector */}
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 16 }}>
           {TIERS.map(t => {
-            const tierStart = (t.tier - 1) * 14 + 1;
-            const tierEnd = t.tier * 14;
-            const active = showTier === t.tier;
-            const reached = curLvl >= tierStart;
-            const current = curLvl >= tierStart && curLvl <= tierEnd;
+            const tierStart = (t.tier - 1) * 14 + 1, tierEnd = t.tier * 14;
+            const active = showTier === t.tier, reached = curLvl >= tierStart, current = curLvl >= tierStart && curLvl <= tierEnd;
             return (
-              <button key={t.tier} onClick={() => setShowTier(t.tier)} style={{
-                background: active ? `${color}22` : current ? "rgba(255,214,0,.08)" : "rgba(255,255,255,.03)",
-                border: `1px solid ${active ? color : current ? "#ffd60044" : "rgba(255,255,255,.07)"}`,
-                borderRadius: 4, padding: "4px 8px", cursor: "pointer",
-                fontFamily: "'Orbitron',monospace", fontSize: 8, fontWeight: 700,
-                color: active ? color : current ? "#ffd600" : reached ? "#555" : "#222",
-                letterSpacing: .5, transition: "all .12s",
-              }}>
+              <button key={t.tier} onClick={() => setShowTier(t.tier)} style={{ background: active ? `${color}22` : current ? "rgba(255,214,0,.08)" : "rgba(255,255,255,.03)", border: `1px solid ${active ? color : current ? "#ffd60044" : "rgba(255,255,255,.07)"}`, borderRadius: 4, padding: "4px 8px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 8, fontWeight: 700, color: active ? color : current ? "#ffd600" : reached ? "#555" : "#222", letterSpacing: .5, transition: "all .12s" }}>
                 T{t.tier}
               </button>
             );
           })}
         </div>
-
-        {/* Current tier header */}
         <div style={{ background: `${color}0e`, border: `1px solid ${color}33`, borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
           <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 11, color, letterSpacing: 1 }}>TIER {tier.tier} — {tier.name.toUpperCase()}</div>
           <div style={{ fontSize: 10, color: "#444", fontFamily: "'Share Tech Mono',monospace", marginTop: 3 }}>
             Levels {tierStartLvl}–{tierStartLvl + 13} · {XP_THRESHOLDS[tierStartLvl - 1].toLocaleString()} – {(XP_THRESHOLDS[Math.min(tierStartLvl + 13, NUM_LEVELS - 1)] || MAX_XP).toLocaleString()} XP
           </div>
         </div>
-
-        {/* Level list for this tier */}
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {tier.names.map((name, i) => {
             const lvl = tierStartLvl + i;
             if (lvl > NUM_LEVELS) return null;
-            const reached = curLvl >= lvl;
-            const isCur = curLvl === lvl;
-            const xpStart = XP_THRESHOLDS[lvl - 1];
-            const xpEnd = lvl < NUM_LEVELS ? XP_THRESHOLDS[lvl] : MAX_XP;
-            const cost = xpEnd - xpStart;
+            const reached = curLvl >= lvl, isCur = curLvl === lvl;
+            const xpStart = XP_THRESHOLDS[lvl - 1], xpEnd = lvl < NUM_LEVELS ? XP_THRESHOLDS[lvl] : MAX_XP;
             return (
               <div key={lvl} style={{ background: isCur ? `${color}18` : reached ? "rgba(255,255,255,.03)" : "transparent", border: `1px solid ${isCur ? color : reached ? "rgba(255,255,255,.08)" : "rgba(255,255,255,.03)"}`, borderRadius: 8, padding: "10px 14px", position: "relative", overflow: "hidden", boxShadow: isCur ? `0 0 14px ${glow}` : "" }}>
                 {isCur && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: color }} />}
@@ -377,7 +388,7 @@ const LevelTable = ({ currentXP, color, glow, statName, onClose }) => {
                   <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 16, fontWeight: 900, color: reached ? color : "#222", minWidth: 36, textAlign: "center" }}>{lvl}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: isCur ? "#fff" : reached ? "#aaa" : "#333" }}>{name}</div>
-                    <div style={{ fontSize: 9, color: "#444", fontFamily: "'Share Tech Mono',monospace", marginTop: 2 }}>{xpStart.toLocaleString()} XP · +{cost.toLocaleString()} to next</div>
+                    <div style={{ fontSize: 9, color: "#444", fontFamily: "'Share Tech Mono',monospace", marginTop: 2 }}>{xpStart.toLocaleString()} XP · +{(xpEnd - xpStart).toLocaleString()} to next</div>
                   </div>
                   <div style={{ fontSize: 13 }}>{reached ? (isCur ? "📍" : "✓") : "🔒"}</div>
                 </div>
@@ -392,11 +403,11 @@ const LevelTable = ({ currentXP, color, glow, statName, onClose }) => {
 };
 
 // ── STAT DETAIL ──────────────────────────────────────────────────────────────
-const StatDetail = ({ sk, state, onClose, onLevelTable, isDesktop }) => {
+const StatDetail = ({ sk, state, onClose, onLevelTable, isDesktop, tz }) => {
   const cfg = STAT_CONFIG[sk], xp = state.statXP[sk], lvl = getLevel(xp);
-  const ds = decayStatus(sk, state.lastActivity);
+  const ds = decayStatus(sk, state.lastActivity, tz);
   const days7 = Array.from({ length: 7 }, (_, i) => {
-    const d = daysAgo(6 - i);
+    const d = daysAgoTZ(6 - i, tz);
     const tasks = (state.taskLog || []).filter(t => t.date === d && t.stat === sk);
     return { d, xpEarned: tasks.reduce((s, t) => s + t.xp, 0) };
   });
@@ -434,7 +445,7 @@ const StatDetail = ({ sk, state, onClose, onLevelTable, isDesktop }) => {
           <div style={{ display: "flex", gap: 5, alignItems: "flex-end", height: 64 }}>
             {days7.map(({ d, xpEarned }, i) => {
               const h = xpEarned > 0 ? Math.max(8, Math.floor((xpEarned / maxXP) * 54)) : 4;
-              const isToday = d === todayStr();
+              const isToday = d === todayStrTZ(tz);
               return (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                   <div style={{ width: "100%", height: h, background: xpEarned > 0 ? cfg.color : "rgba(255,255,255,.06)", borderRadius: "3px 3px 0 0", boxShadow: xpEarned > 0 ? `0 0 8px ${cfg.glow}` : "none", border: isToday ? `1px solid ${cfg.color}` : "none" }} />
@@ -447,7 +458,7 @@ const StatDetail = ({ sk, state, onClose, onLevelTable, isDesktop }) => {
         </div>
         <div style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 8, padding: "12px 14px" }}>
           <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 6 }}>STATUS</div>
-          <div style={{ fontSize: 13, color: "#bbb" }}>Last session: <span style={{ color: "#fff", fontWeight: 700 }}>{state.lastActivity[sk] ? `${daysSince(state.lastActivity[sk])}d ago` : "Never"}</span></div>
+          <div style={{ fontSize: 13, color: "#bbb" }}>Last session: <span style={{ color: "#fff", fontWeight: 700 }}>{state.lastActivity[sk] ? `${daysSinceTZ(state.lastActivity[sk], tz)}d ago` : "Never"}</span></div>
           {ds.status === "safe" && <div style={{ fontSize: 12, color: "#00e676", marginTop: 4 }}>✓ Safe for {ds.daysLeft} more day{ds.daysLeft !== 1 ? "s" : ""}</div>}
           {ds.status === "warn" && <div style={{ fontSize: 12, color: "#ff8c00", marginTop: 4 }}>⚠ Decay begins tomorrow</div>}
           {ds.status === "decay" && <div style={{ fontSize: 12, color: "#ff1744", marginTop: 4 }}>▼ Decaying {ds.daysOver} day{ds.daysOver !== 1 ? "s" : ""} — -{ds.daysOver * DECAY} XP lost</div>}
@@ -493,30 +504,48 @@ const SysMsg = ({ msg, color, onDone }) => {
   );
 };
 
-// ── TASK/HABIT CREATION MODAL ────────────────────────────────────────────────
+// ── TASK/HABIT CREATION MODAL (with notes) ───────────────────────────────────
 const CreateModal = ({ stat, mode, onAdd, onClose, isDesktop }) => {
-  const [name, setName] = useState(""); const [rank, setRank] = useState("B");
+  const [name, setName] = useState("");
+  const [rank, setRank] = useState("B");
+  const [notes, setNotes] = useState("");
+  const [showNotes, setShowNotes] = useState(false);
   const cfg = STAT_CONFIG[stat];
   const isHabit = mode === "habit";
   const align = isDesktop ? "center" : "flex-end";
   const radius = isDesktop ? "12px" : "14px 14px 0 0";
   const mw = isDesktop ? 460 : "100%";
+  const accent = isHabit ? "#ffd600" : cfg.color;
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.84)", zIndex: 300, display: "flex", alignItems: align, justifyContent: "center", padding: isDesktop ? "20px" : "0" }}>
-      <div className="slide" onClick={e => e.stopPropagation()} style={{ background: "#0d0d1a", border: `1px solid ${isHabit ? "#ffd600" : cfg.color}44`, borderRadius: radius, padding: "24px 22px 36px", width: "100%", maxWidth: mw, boxShadow: `0 -10px 40px ${isHabit ? "rgba(255,214,0,.3)" : cfg.glow}` }}>
+      <div className="slide" onClick={e => e.stopPropagation()} style={{ background: "#0d0d1a", border: `1px solid ${accent}44`, borderRadius: radius, padding: "24px 22px 36px", width: "100%", maxWidth: mw, boxShadow: `0 -10px 40px ${isHabit ? "rgba(255,214,0,.3)" : cfg.glow}`, maxHeight: "90vh", overflow: "auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <div>
             <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: 1 }}>{isHabit ? "ADD HABIT" : "ADD CUSTOM TASK"}</div>
-            <div style={{ fontSize: 11, color: isHabit ? "#ffd600" : cfg.color, marginTop: 2 }}>{cfg.icon} {cfg.name.toUpperCase()} · {isHabit ? "Repeatable anytime" : "Daily reset"}</div>
+            <div style={{ fontSize: 11, color: accent, marginTop: 2 }}>{cfg.icon} {cfg.name.toUpperCase()} · {isHabit ? "Repeatable anytime" : "Daily reset"}</div>
           </div>
           <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#444", fontSize: 20, cursor: "pointer" }}>✕</button>
         </div>
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 7 }}>{isHabit ? "HABIT NAME" : "TASK NAME"}</div>
           <input value={name} onChange={e => setName(e.target.value)} placeholder={isHabit ? "e.g. 10 pull-ups" : "e.g. Run 5km"} autoFocus
-            onKeyDown={e => { if (e.key === "Enter" && name.trim()) onAdd(name.trim(), rank); }}
+            onKeyDown={e => { if (e.key === "Enter" && name.trim()) onAdd(name.trim(), rank, notes.trim()); }}
             style={{ width: "100%", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, color: "#fff", padding: "12px 14px", fontFamily: "'Rajdhani',sans-serif", fontSize: 16, outline: "none" }} />
         </div>
+
+        {/* Notes toggle */}
+        <div style={{ marginBottom: 16 }}>
+          <button onClick={() => setShowNotes(v => !v)} style={{ background: "transparent", border: "none", color: showNotes ? accent : "#333", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 9, letterSpacing: 1, padding: "0 0 8px 0", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 12 }}>{showNotes ? "▾" : "▸"}</span>
+            ADD NOTES {notes && !showNotes && <span style={{ color: accent, background: `${accent}22`, border: `1px solid ${accent}44`, borderRadius: 3, padding: "1px 6px", fontSize: 8 }}>HAS NOTES</span>}
+          </button>
+          {showNotes && (
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional notes, details, goals, or anything relevant..."
+              style={{ width: "100%", background: "rgba(255,255,255,.03)", border: `1px solid ${accent}33`, borderRadius: 6, color: "#aaa", padding: "10px 12px", fontFamily: "'Share Tech Mono',monospace", fontSize: 11, outline: "none", resize: "vertical", minHeight: 80, lineHeight: 1.6 }}
+            />
+          )}
+        </div>
+
         {isHabit && <div style={{ background: "rgba(255,214,0,.06)", border: "1px solid rgba(255,214,0,.15)", borderRadius: 7, padding: "10px 12px", marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: "#ffd600", fontFamily: "'Share Tech Mono',monospace", lineHeight: 1.5 }}>💡 Habits can be logged multiple times per day. Each press gives XP and is recorded separately.</div>
         </div>}
@@ -524,15 +553,15 @@ const CreateModal = ({ stat, mode, onAdd, onClose, isDesktop }) => {
           <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 9 }}>XP PER LOG</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
             {[["E", "10 XP", "Easy"], ["B", "25 XP", "Moderate"], ["S", "50 XP", "Hard"]].map(([r, xp, label]) => (
-              <button key={r} onClick={() => setRank(r)} style={{ background: rank === r ? `${isHabit ? "#ffd600" : cfg.color}18` : "rgba(255,255,255,.02)", border: `1px solid ${rank === r ? (isHabit ? "#ffd600" : cfg.color) : "rgba(255,255,255,.07)"}`, borderRadius: 7, padding: "12px 6px", cursor: "pointer", transition: "all .15s" }}>
-                <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 18, fontWeight: 700, color: rank === r ? (isHabit ? "#ffd600" : cfg.color) : "#444" }}>{r}</div>
+              <button key={r} onClick={() => setRank(r)} style={{ background: rank === r ? `${accent}18` : "rgba(255,255,255,.02)", border: `1px solid ${rank === r ? accent : "rgba(255,255,255,.07)"}`, borderRadius: 7, padding: "12px 6px", cursor: "pointer", transition: "all .15s" }}>
+                <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 18, fontWeight: 700, color: rank === r ? accent : "#444" }}>{r}</div>
                 <div style={{ fontSize: 12, color: rank === r ? "#fff" : "#333", fontWeight: 600, marginTop: 2 }}>{xp}</div>
                 <div style={{ fontSize: 10, color: "#333", marginTop: 1 }}>{label}</div>
               </button>
             ))}
           </div>
         </div>
-        <button className="pb" onClick={() => { if (name.trim()) onAdd(name.trim(), rank); }} style={{ width: "100%", background: `linear-gradient(135deg,${isHabit ? "#ffd60099,#ffd600" : `${cfg.color}99,${cfg.color}`})`, color: "#000", border: "none", borderRadius: 8, padding: "14px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, opacity: name.trim() ? 1 : .35 }}>
+        <button className="pb" onClick={() => { if (name.trim()) onAdd(name.trim(), rank, notes.trim()); }} style={{ width: "100%", background: `linear-gradient(135deg,${accent}99,${accent})`, color: "#000", border: "none", borderRadius: 8, padding: "14px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 12, fontWeight: 700, letterSpacing: 1.5, opacity: name.trim() ? 1 : .35 }}>
           {isHabit ? "CREATE HABIT" : "CREATE TASK"} · +{TASK_XP[rank]} XP
         </button>
       </div>
@@ -541,19 +570,24 @@ const CreateModal = ({ stat, mode, onAdd, onClose, isDesktop }) => {
 };
 
 // ── EDIT NAME MODAL ──────────────────────────────────────────────────────────
-const EditNameModal = ({ currentName, onSave, onClose }) => {
+const EditNameModal = ({ currentName, currentNotes, onSave, onClose }) => {
   const [val, setVal] = useState(currentName);
+  const [notes, setNotes] = useState(currentNotes || "");
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.84)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}>
       <div className="slide" onClick={e => e.stopPropagation()} style={{ background: "#0d0d1a", border: "1px solid rgba(255,255,255,.15)", borderRadius: 12, padding: "24px 22px", width: "100%", maxWidth: 400 }}>
-        <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: 1, marginBottom: 4 }}>RENAME TASK</div>
-        <div style={{ fontSize: 10, color: "#444", fontFamily: "'Share Tech Mono',monospace", marginBottom: 16 }}>Edit the name for this task</div>
+        <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 13, fontWeight: 700, color: "#fff", letterSpacing: 1, marginBottom: 4 }}>EDIT TASK</div>
+        <div style={{ fontSize: 10, color: "#444", fontFamily: "'Share Tech Mono',monospace", marginBottom: 14 }}>Update name and notes</div>
+        <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 6 }}>NAME</div>
         <input value={val} onChange={e => setVal(e.target.value)} autoFocus
-          onKeyDown={e => { if (e.key === "Enter" && val.trim()) onSave(val.trim()); }}
-          style={{ width: "100%", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 6, color: "#fff", padding: "12px 14px", fontFamily: "'Rajdhani',sans-serif", fontSize: 16, outline: "none", marginBottom: 16 }} />
+          onKeyDown={e => { if (e.key === "Enter" && val.trim()) onSave(val.trim(), notes); }}
+          style={{ width: "100%", background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.15)", borderRadius: 6, color: "#fff", padding: "12px 14px", fontFamily: "'Rajdhani',sans-serif", fontSize: 16, outline: "none", marginBottom: 14 }} />
+        <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 6 }}>NOTES</div>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional notes..."
+          style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.1)", borderRadius: 6, color: "#aaa", padding: "10px 12px", fontFamily: "'Share Tech Mono',monospace", fontSize: 11, outline: "none", resize: "vertical", minHeight: 70, marginBottom: 16, lineHeight: 1.6 }} />
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.1)", color: "#777", borderRadius: 7, padding: "11px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 10 }}>CANCEL</button>
-          <button onClick={() => { if (val.trim()) onSave(val.trim()); }} style={{ flex: 1, background: "linear-gradient(135deg,#2979ff99,#2979ff)", color: "#fff", border: "none", borderRadius: 7, padding: "11px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700 }}>SAVE</button>
+          <button onClick={() => { if (val.trim()) onSave(val.trim(), notes); }} style={{ flex: 1, background: "linear-gradient(135deg,#2979ff99,#2979ff)", color: "#fff", border: "none", borderRadius: 7, padding: "11px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700 }}>SAVE</button>
         </div>
       </div>
     </div>
@@ -578,7 +612,7 @@ const ResetModal = ({ onConfirm, onClose }) => (
 );
 
 // ── ARCHIVE ──────────────────────────────────────────────────────────────────
-const Archive = ({ taskLog, sleepLog, isDesktop }) => {
+const Archive = ({ taskLog, sleepLog, isDesktop, tz }) => {
   const [filter, setFilter] = useState("all");
   const allDates = [...new Set([...(taskLog || []).map(t => t.date), ...(sleepLog || []).map(s => s.date)])].sort((a, b) => b.localeCompare(a));
   const filtered = filter === "all" ? (taskLog || []) : (taskLog || []).filter(t => t.stat === filter);
@@ -607,10 +641,13 @@ const Archive = ({ taskLog, sleepLog, isDesktop }) => {
         const daySleep = sleepLog?.find(s => s.date === date);
         if (!dayTasks.length && (!daySleep || (filter !== "all" && filter !== "health"))) return null;
         const totalXP = dayTasks.reduce((s, t) => s + t.xp, 0) + (daySleep?.xp || 0);
+        const isToday = date === todayStrTZ(tz);
         return (
           <div key={date} style={{ marginBottom: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 10, color: "#2979ff", letterSpacing: 1 }}>{new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</div>
+              <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 10, color: isToday ? "#2979ff" : "#555", letterSpacing: 1 }}>
+                {isToday ? "TODAY · " : ""}{new Date(date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              </div>
               {totalXP > 0 && <div style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 10, color: "#ffd600" }}>+{totalXP}</div>}
             </div>
             <div style={{ background: "#0d0d1a", border: "1px solid rgba(255,255,255,.06)", borderRadius: 9, overflow: "hidden" }}>
@@ -622,6 +659,7 @@ const Archive = ({ taskLog, sleepLog, isDesktop }) => {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, color: "#bbb", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.taskName || "Task"}</div>
                       <div style={{ fontSize: 9, color: "#333", fontFamily: "'Orbitron',monospace", marginTop: 1 }}>{cfg?.name?.toUpperCase()} · {t.rank}-RANK{t.isHabit ? " · HABIT" : t.isCustom ? " · CUSTOM" : ""}</div>
+                      {t.notes && <div style={{ fontSize: 9, color: "#3a3a5a", fontFamily: "'Share Tech Mono',monospace", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📝 {t.notes}</div>}
                     </div>
                     <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 11, color: cfg?.color, flexShrink: 0 }}>+{t.xp}</div>
                   </div>
@@ -645,7 +683,6 @@ const Archive = ({ taskLog, sleepLog, isDesktop }) => {
 // ── MAIN ─────────────────────────────────────────────────────────────────────
 export default function App() {
   useEffect(() => { injectStyles(); }, []);
-
   const isDesktop = useIsDesktop(900);
 
   const [state, setState]           = useState(null);
@@ -665,21 +702,39 @@ export default function App() {
   const [statDetail, setStatDetail] = useState(null);
   const [levelTable, setLevelTable] = useState(null);
   const [habitPops, setHabitPops]   = useState({});
+  const [showTZModal, setShowTZModal] = useState(false);
+  // Date override for past-day editing
+  const [selectedDate, setSelectedDate] = useState(null);
   const prevXP = useRef({});
 
+  // Load from localStorage
   useEffect(() => {
-    try { const r = localStorage.getItem("rpgState_v7"); setState(r ? JSON.parse(r) : freshState()); }
-    catch { setState(freshState()); }
+    try {
+      const r = localStorage.getItem("rpgState_v7");
+      const loaded = r ? JSON.parse(r) : freshState();
+      // Migrate: ensure new fields exist without wiping data
+      if (!loaded.timezone) loaded.timezone = "America/New_York";
+      if (!loaded.taskNotes) loaded.taskNotes = {};
+      setState(loaded);
+    } catch { setState(freshState()); }
   }, []);
+
+  const tz = state?.timezone || "America/New_York";
+
+  // Keep selectedDate in sync with today when tz changes or on load
+  useEffect(() => {
+    if (state) setSelectedDate(todayStrTZ(tz));
+  }, [tz, state !== null]);
 
   useEffect(() => { if (state) localStorage.setItem("rpgState_v7", JSON.stringify(state)); }, [state]);
 
+  // Compute todayDone based on selectedDate (not necessarily today)
   useEffect(() => {
-    if (!state) return;
+    if (!state || !selectedDate) return;
     const done = {};
-    (state.taskLog || []).filter(t => t.date === todayStr() && !t.isHabit).forEach(t => { done[t.taskId] = t.rank; });
+    (state.taskLog || []).filter(t => t.date === selectedDate && !t.isHabit).forEach(t => { done[t.taskId] = t.rank; });
     setTodayDone(done);
-  }, [state]);
+  }, [state, selectedDate]);
 
   useEffect(() => {
     if (!state) return;
@@ -694,46 +749,55 @@ export default function App() {
 
   useEffect(() => {
     if (!state) return;
-    const today = todayStr();
+    const today = todayStrTZ(tz);
     if (state.lastDecayCheck === today) return;
     setState(prev => {
       const newXP = { ...prev.statXP };
       Object.keys(STAT_CONFIG).forEach(k => {
-        const d = daysSince(prev.lastActivity[k]);
+        const d = daysSinceTZ(prev.lastActivity[k], tz);
         if (d > GRACE_DAYS) { const dd = d - GRACE_DAYS; newXP[k] = Math.max(0, newXP[k] - (k === "will" ? WILL_DECAY : DECAY) * dd); }
       });
       return { ...prev, statXP: newXP, lastDecayCheck: today };
     });
-  }, [state?.lastDecayCheck]);
+  }, [state?.lastDecayCheck, tz]);
 
   const toast$ = (msg, color = "#00e676") => { setToast({ msg, color }); setTimeout(() => setToast(null), 2400); };
   const showSys = (msg, color) => setSysMsg({ msg, color });
 
-  const completeTask = (taskId, taskName, stat, rank, isCustom = false) => {
+  const activeDate = selectedDate || todayStrTZ(tz);
+  const isEditingPast = activeDate !== todayStrTZ(tz);
+
+  const completeTask = (taskId, taskName, stat, rank, isCustom = false, taskNoteText = "") => {
     if (todayDone[taskId]) return;
-    const xp = TASK_XP[rank], today = todayStr();
+    const xp = TASK_XP[rank];
     setState(prev => {
       const newXP = { ...prev.statXP, [stat]: prev.statXP[stat] + xp };
-      const newLast = { ...prev.lastActivity, [stat]: today };
-      const newLog = [...(prev.taskLog || []), { date: today, taskId, taskName, stat, rank, xp, isCustom }];
-      const delta = calcWillXP(newLog, prev.sleepLog) - calcWillXP(prev.taskLog, prev.sleepLog);
-      if (delta !== 0) { newXP.will = Math.max(0, newXP.will + delta); newLast.will = today; }
+      const newLast = { ...prev.lastActivity };
+      // Only update lastActivity if this date is >= existing lastActivity
+      if (!newLast[stat] || activeDate >= newLast[stat]) newLast[stat] = activeDate;
+      const newLog = [...(prev.taskLog || []), { date: activeDate, taskId, taskName, stat, rank, xp, isCustom, notes: taskNoteText || undefined }];
+      const delta = calcWillXP(newLog, prev.sleepLog, activeDate) - calcWillXP(prev.taskLog, prev.sleepLog, activeDate);
+      if (delta !== 0) {
+        newXP.will = Math.max(0, newXP.will + delta);
+        if (!newLast.will || activeDate >= newLast.will) newLast.will = activeDate;
+      }
       const statKeys = Object.keys(STAT_CONFIG).filter(k => k !== "will");
-      const allFed = statKeys.every(k => newLog.some(t => t.date === today && t.stat === k && !t.isHabit));
+      const allFed = statKeys.every(k => newLog.some(t => t.date === activeDate && t.stat === k && !t.isHabit));
       setTimeout(() => showSys(getRand(allFed ? "allDone" : "taskDone"), allFed ? "#ffd600" : STAT_CONFIG[stat].color), 300);
       return { ...prev, statXP: newXP, lastActivity: newLast, taskLog: newLog };
     });
-    toast$(`+${xp} ${STAT_CONFIG[stat].name} XP`);
+    toast$(`+${xp} ${STAT_CONFIG[stat].name} XP${isEditingPast ? " (past)" : ""}`);
   };
 
   const logHabit = (habit) => {
-    const xp = TASK_XP[habit.rank], today = todayStr();
+    const xp = TASK_XP[habit.rank];
     setState(prev => {
       const newXP = { ...prev.statXP, [habit.stat]: prev.statXP[habit.stat] + xp };
-      const newLast = { ...prev.lastActivity, [habit.stat]: today };
-      const newLog = [...(prev.taskLog || []), { date: today, taskId: habit.id, taskName: habit.name, stat: habit.stat, rank: habit.rank, xp, isHabit: true }];
-      const delta = calcWillXP(newLog, prev.sleepLog) - calcWillXP(prev.taskLog, prev.sleepLog);
-      if (delta !== 0) { newXP.will = Math.max(0, newXP.will + delta); newLast.will = today; }
+      const newLast = { ...prev.lastActivity };
+      if (!newLast[habit.stat] || activeDate >= newLast[habit.stat]) newLast[habit.stat] = activeDate;
+      const newLog = [...(prev.taskLog || []), { date: activeDate, taskId: habit.id, taskName: habit.name, stat: habit.stat, rank: habit.rank, xp, isHabit: true }];
+      const delta = calcWillXP(newLog, prev.sleepLog, activeDate) - calcWillXP(prev.taskLog, prev.sleepLog, activeDate);
+      if (delta !== 0) { newXP.will = Math.max(0, newXP.will + delta); if (!newLast.will || activeDate >= newLast.will) newLast.will = activeDate; }
       return { ...prev, statXP: newXP, lastActivity: newLast, taskLog: newLog };
     });
     setHabitPops(p => ({ ...p, [habit.id]: (p[habit.id] || 0) + 1 }));
@@ -742,12 +806,14 @@ export default function App() {
     setTimeout(() => showSys(getRand("habit"), "#ffd600"), 300);
   };
 
-  const addTask = (stat, name, rank) => {
-    setState(prev => ({ ...prev, customTasks: [...(prev.customTasks || []), { id: "c_" + uid(), stat, name, rank, isCustom: true }] }));
+  const addTask = (stat, name, rank, notes = "") => {
+    const newTask = { id: "c_" + uid(), stat, name, rank, isCustom: true, notes: notes || undefined };
+    setState(prev => ({ ...prev, customTasks: [...(prev.customTasks || []), newTask] }));
     setCreateMode(null); toast$("Task created", "#2979ff");
   };
-  const addHabit = (stat, name, rank) => {
-    setState(prev => ({ ...prev, habits: [...(prev.habits || []), { id: "h_" + uid(), stat, name, rank, isHabit: true }] }));
+  const addHabit = (stat, name, rank, notes = "") => {
+    const newHabit = { id: "h_" + uid(), stat, name, rank, isHabit: true, notes: notes || undefined };
+    setState(prev => ({ ...prev, habits: [...(prev.habits || []), newHabit] }));
     setCreateMode(null); toast$("Habit created", "#ffd600");
   };
 
@@ -757,23 +823,28 @@ export default function App() {
     else setState(prev => ({ ...prev, hiddenTasks: [...(prev.hiddenTasks || []), task.id] }));
   };
 
-  const saveTaskName = (task, newName) => {
-    if (task.isHabit) setState(prev => ({ ...prev, habits: (prev.habits || []).map(h => h.id === task.id ? { ...h, name: newName } : h) }));
-    else if (task.isCustom) setState(prev => ({ ...prev, customTasks: (prev.customTasks || []).map(t => t.id === task.id ? { ...t, name: newName } : t) }));
-    else setState(prev => ({ ...prev, taskNameOverrides: { ...(prev.taskNameOverrides || {}), [task.id]: newName } }));
+  const saveTaskName = (task, newName, newNotes = "") => {
+    if (task.isHabit) setState(prev => ({ ...prev, habits: (prev.habits || []).map(h => h.id === task.id ? { ...h, name: newName, notes: newNotes || undefined } : h) }));
+    else if (task.isCustom) setState(prev => ({ ...prev, customTasks: (prev.customTasks || []).map(t => t.id === task.id ? { ...t, name: newName, notes: newNotes || undefined } : t) }));
+    else setState(prev => ({
+      ...prev,
+      taskNameOverrides: { ...(prev.taskNameOverrides || {}), [task.id]: newName },
+      taskNotes: { ...(prev.taskNotes || {}), [task.id]: newNotes || undefined },
+    }));
     setEditTarget(null);
   };
 
   const logSleep = () => {
     const h = parseFloat(sleepInput);
     if (isNaN(h) || h < 0 || h > 24) return;
-    const xp = h >= 8 ? 80 : h >= 7 ? 50 : h >= 6 ? 25 : 0, today = todayStr();
+    const xp = h >= 8 ? 80 : h >= 7 ? 50 : h >= 6 ? 25 : 0;
     setState(prev => {
-      const newSleep = [...(prev.sleepLog || []).filter(s => s.date !== today), { date: today, hours: h, xp }];
+      const newSleep = [...(prev.sleepLog || []).filter(s => s.date !== activeDate), { date: activeDate, hours: h, xp }];
       const newXP = { ...prev.statXP, health: prev.statXP.health + xp };
-      const newLast = { ...prev.lastActivity, health: today };
-      const delta = calcWillXP(prev.taskLog, newSleep) - calcWillXP(prev.taskLog, prev.sleepLog);
-      if (delta !== 0) { newXP.will = Math.max(0, newXP.will + delta); newLast.will = today; }
+      const newLast = { ...prev.lastActivity };
+      if (!newLast.health || activeDate >= newLast.health) newLast.health = activeDate;
+      const delta = calcWillXP(prev.taskLog, newSleep, activeDate) - calcWillXP(prev.taskLog, prev.sleepLog, activeDate);
+      if (delta !== 0) { newXP.will = Math.max(0, newXP.will + delta); if (!newLast.will || activeDate >= newLast.will) newLast.will = activeDate; }
       return { ...prev, statXP: newXP, lastActivity: newLast, sleepLog: newSleep };
     });
     toast$(xp > 0 ? `+${xp} Health XP` : "Logged — aim for 7+", xp > 0 ? "#00e676" : "#ff8c00");
@@ -781,7 +852,7 @@ export default function App() {
   };
 
   const resetAll = () => {
-    const f = freshState(); f.name = state.name;
+    const f = freshState(); f.name = state.name; f.timezone = state.timezone;
     setState(f); prevXP.current = {};
     setShowReset(false); setView("dashboard");
     toast$("System reset", "#ff4444");
@@ -794,41 +865,38 @@ export default function App() {
     </div>
   );
 
-  const today     = todayStr();
+  const todayActual = todayStrTZ(tz);
   const ovLvl     = getOverallLevel(state.statXP);
   const ovTier    = getLevelTier(ovLvl);
-  const sleepToday = (state.sleepLog || []).find(s => s.date === today);
+  const sleepToday = (state.sleepLog || []).find(s => s.date === todayActual);
+  const sleepActiveDate = (state.sleepLog || []).find(s => s.date === activeDate);
   const statKeys  = Object.keys(STAT_CONFIG).filter(k => k !== "will");
-  const statsFedN = new Set((state.taskLog || []).filter(t => t.date === today && t.stat !== "will" && !t.isHabit).map(t => t.stat)).size;
+  const statsFedN = new Set((state.taskLog || []).filter(t => t.date === todayActual && t.stat !== "will" && !t.isHabit).map(t => t.stat)).size;
   const totalFed  = statsFedN + (sleepToday ? 1 : 0);
-  const streak    = calcStreak(state.taskLog || [], state.sleepLog || []);
-  const xpToday   = todayXP(state.taskLog || [], state.sleepLog || []);
-  const decayAlerts = statKeys.filter(k => decayStatus(k, state.lastActivity).status !== "safe");
+  const streak    = calcStreak(state.taskLog || [], state.sleepLog || [], tz);
+  const xpToday   = todayXP(state.taskLog || [], state.sleepLog || [], tz);
+  const decayAlerts = statKeys.filter(k => decayStatus(k, state.lastActivity, tz).status !== "safe");
   const willBonus = totalFed >= 8 ? 200 : totalFed >= 6 ? 100 : totalFed >= 4 ? 40 : 0;
 
   const getStatTasks = (key) => [
-    ...(DEFAULT_TASKS[key] || []).filter(t => !(state.hiddenTasks || []).includes(t.id)).map(t => ({ ...t, name: (state.taskNameOverrides || {})[t.id] || t.name })),
+    ...(DEFAULT_TASKS[key] || []).filter(t => !(state.hiddenTasks || []).includes(t.id)).map(t => ({ ...t, name: (state.taskNameOverrides || {})[t.id] || t.name, notes: (state.taskNotes || {})[t.id] || t.notes })),
     ...(state.customTasks || []).filter(t => t.stat === key),
   ];
   const getStatHabits = (key) => (state.habits || []).filter(h => h.stat === key);
-  const habitCountToday = (habitId) => (state.taskLog || []).filter(t => t.date === today && t.taskId === habitId && t.isHabit).length;
+  const habitCountActiveDate = (habitId) => (state.taskLog || []).filter(t => t.date === activeDate && t.taskId === habitId && t.isHabit).length;
 
   const SIDEBAR_W = 278;
 
-  // ── DESKTOP SIDEBAR ────────────────────────────────────────────────────────
+  // ── DESKTOP SIDEBAR ──────────────────────────────────────────────────────
   const DesktopSidebar = () => (
     <div className="slideIn" style={{ position: "fixed", left: 0, top: 0, width: SIDEBAR_W, height: "100vh", background: "#06060f", borderRight: "1px solid rgba(255,255,255,.07)", display: "flex", flexDirection: "column", zIndex: 200, overflowY: "auto" }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", pointerEvents: "none" }}>
-        <div className="scanl" />
-      </div>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", pointerEvents: "none" }}><div className="scanl" /></div>
 
-      {/* Branding */}
       <div style={{ padding: "22px 20px 18px", borderBottom: "1px solid rgba(255,255,255,.05)", position: "relative" }}>
         <div style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 9, color: "#2979ff", letterSpacing: 3, marginBottom: 3 }}>[ SYSTEM v3.0 · 240 LVL ]</div>
         <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 16, fontWeight: 900, color: "#fff", letterSpacing: 2 }}>LEVELING OS</div>
       </div>
 
-      {/* Character */}
       <div style={{ padding: "18px 20px", borderBottom: "1px solid rgba(255,255,255,.05)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <div className="float" style={{ fontSize: 30, lineHeight: 1, filter: "drop-shadow(0 0 8px rgba(41,121,255,.4))" }}>{getCharIcon(ovLvl)}</div>
@@ -842,7 +910,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Will */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
             <button onClick={() => setLevelTable({ xp: state.statXP.will, color: "#ffd600", glow: "rgba(255,214,0,0.5)", name: "Will" })} style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, color: "#ffd600", letterSpacing: .8, background: "transparent", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", textDecorationStyle: "dotted" }}>👁️ WILL — LVL {getLevel(state.statXP.will)} · {getLevelName(getLevel(state.statXP.will))} ↗</button>
@@ -851,7 +918,6 @@ export default function App() {
           <XPBar xp={state.statXP.will} color="#ffd600" glow="rgba(255,214,0,.5)" thin />
         </div>
 
-        {/* Today progress dots */}
         <div style={{ marginBottom: 10 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#333", fontFamily: "'Share Tech Mono',monospace", marginBottom: 5 }}>
             <span>TODAY {totalFed}/9</span>
@@ -859,13 +925,12 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 2 }}>
             {[...statKeys, "sleep"].map((k, i) => {
-              const fed = k === "sleep" ? !!sleepToday : (state.taskLog || []).some(t => t.date === today && t.stat === k && !t.isHabit);
+              const fed = k === "sleep" ? !!sleepToday : (state.taskLog || []).some(t => t.date === todayActual && t.stat === k && !t.isHabit);
               return <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: fed ? "#2979ff" : "rgba(255,255,255,.07)", boxShadow: fed ? "0 0 4px #2979ff" : "none", transition: "all .3s" }} />;
             })}
           </div>
         </div>
 
-        {/* Streak + XP chips */}
         <div style={{ display: "flex", gap: 7 }}>
           {[[streak > 0 ? "🔥" : "💤", `${streak}d streak`, streak > 0 ? "#ff8c00" : "#333"], ["⚡", `+${xpToday} today`, "#ffd600"]].map(([icon, label, c]) => (
             <div key={label} style={{ flex: 1, background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.05)", borderRadius: 6, padding: "6px 8px", display: "flex", alignItems: "center", gap: 5 }}>
@@ -876,34 +941,24 @@ export default function App() {
         </div>
       </div>
 
-      {/* Nav */}
       <div style={{ padding: "14px 12px", flex: 1 }}>
         {[
-          { id: "dashboard", label: "HOME", icon: "◈" },
-          { id: "sleep", label: "SLEEP LOG", icon: "🌙" },
-          { id: "archive", label: "ACTIVITY LOG", icon: "📜" },
+          { id: "dashboard", label: "HOME",         icon: "◈" },
+          { id: "sleep",     label: "SLEEP LOG",    icon: "🌙" },
+          { id: "archive",   label: "ACTIVITY LOG", icon: "📜" },
         ].map(n => (
-          <button key={n.id} className="snav-btn" onClick={() => setView(n.id)} style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 10,
-            background: view === n.id ? "rgba(41,121,255,.12)" : "transparent",
-            border: view === n.id ? "1px solid rgba(41,121,255,.28)" : "1px solid transparent",
-            color: view === n.id ? "#2979ff" : "#444",
-            borderRadius: 7, padding: "12px 14px", cursor: "pointer",
-            fontFamily: "'Orbitron',monospace", fontSize: 10, letterSpacing: .8, fontWeight: 700,
-            marginBottom: 4, transition: "all .15s", textAlign: "left",
-          }}>
+          <button key={n.id} className="snav-btn" onClick={() => setView(n.id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, background: view === n.id ? "rgba(41,121,255,.12)" : "transparent", border: view === n.id ? "1px solid rgba(41,121,255,.28)" : "1px solid transparent", color: view === n.id ? "#2979ff" : "#444", borderRadius: 7, padding: "12px 14px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 10, letterSpacing: .8, fontWeight: 700, marginBottom: 4, transition: "all .15s", textAlign: "left" }}>
             <span style={{ fontSize: 14, minWidth: 18, textAlign: "center" }}>{n.icon}</span>
             {n.label}
             {view === n.id && <div style={{ marginLeft: "auto", width: 5, height: 5, borderRadius: "50%", background: "#2979ff", boxShadow: "0 0 6px #2979ff" }} />}
           </button>
         ))}
 
-        {/* Decay alerts */}
         {decayAlerts.length > 0 && (
           <div style={{ marginTop: 14, background: "rgba(255,23,68,.05)", border: "1px solid rgba(255,23,68,.2)", borderRadius: 7, padding: "12px 13px" }}>
             <div style={{ fontSize: 8, color: "#ff1744", fontFamily: "'Orbitron',monospace", letterSpacing: 2, marginBottom: 8 }}>⚠ DECAY ALERTS</div>
             {decayAlerts.map(k => {
-              const cfg = STAT_CONFIG[k], ds = decayStatus(k, state.lastActivity);
+              const cfg = STAT_CONFIG[k], ds = decayStatus(k, state.lastActivity, tz);
               return <div key={k} onClick={() => { setActiveStat(k); setView("tasks"); }} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 5, padding: "3px 0" }}>
                 <span style={{ fontSize: 13 }}>{cfg.icon}</span>
                 <span style={{ fontSize: 11, color: "#ccc", flex: 1, fontWeight: 600 }}>{cfg.name}</span>
@@ -914,8 +969,13 @@ export default function App() {
         )}
       </div>
 
-      {/* Reset */}
-      <div style={{ padding: "14px 12px", borderTop: "1px solid rgba(255,255,255,.05)" }}>
+      {/* Timezone */}
+      <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,.05)" }}>
+        <button onClick={() => setShowTZModal(true)} style={{ width: "100%", background: "rgba(41,121,255,.06)", border: "1px solid rgba(41,121,255,.18)", color: "#2979ff66", borderRadius: 6, padding: "8px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 9, letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, transition: "all .15s" }}>
+          🌐 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tz.split("/")[1]?.replace("_"," ") || tz}</span>
+        </button>
+      </div>
+      <div style={{ padding: "8px 12px 14px", borderTop: "none" }}>
         <button onClick={() => setShowReset(true)} style={{ width: "100%", background: "transparent", border: "1px solid rgba(255,68,68,.12)", color: "rgba(255,68,68,.35)", borderRadius: 6, padding: "9px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 9, letterSpacing: 1, transition: "all .15s" }}>⚙️ RESET SYSTEM</button>
       </div>
     </div>
@@ -924,38 +984,32 @@ export default function App() {
   return (
     <div style={{ background: "#030308", minHeight: "100vh", width: "100%" }}>
       <div className="rpg" style={{ background: "#070710", minHeight: "100vh", width: "100%", position: "relative", paddingBottom: 80 }}>
-
-        {!isDesktop && (
-          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}>
-            <div className="scanl" />
-          </div>
-        )}
+        {!isDesktop && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0 }}><div className="scanl" /></div>}
 
         {toast && <div style={{ position: "fixed", top: 18, left: "50%", transform: "translateX(-50%)", background: "#0d0d1a", border: `1px solid ${toast.color}`, color: toast.color, padding: "9px 18px", borderRadius: 7, fontFamily: "'Orbitron',monospace", fontSize: 11, letterSpacing: 1, zIndex: 700, boxShadow: `0 0 16px ${toast.color}44`, whiteSpace: "nowrap", animation: "fadeIn .18s ease" }}>{toast.msg}</div>}
         {sysMsg && <SysMsg msg={sysMsg.msg} color={sysMsg.color} onDone={() => setSysMsg(null)} />}
         {levelUpQ.length > 0 && <LevelUpOverlay stat={levelUpQ[0].stat} newLevel={levelUpQ[0].newLevel} onDone={() => setLevelUpQ(q => q.slice(1))} />}
-        {createMode && activeStat && <CreateModal stat={activeStat} mode={createMode} onAdd={(n, r) => createMode === "habit" ? addHabit(activeStat, n, r) : addTask(activeStat, n, r)} onClose={() => setCreateMode(null)} isDesktop={isDesktop} />}
+        {createMode && activeStat && <CreateModal stat={activeStat} mode={createMode} onAdd={(n, r, notes) => createMode === "habit" ? addHabit(activeStat, n, r, notes) : addTask(activeStat, n, r, notes)} onClose={() => setCreateMode(null)} isDesktop={isDesktop} />}
         {showReset && <ResetModal onConfirm={resetAll} onClose={() => setShowReset(false)} />}
-        {editTarget && <EditNameModal currentName={editTarget.currentName} onSave={(n) => saveTaskName(editTarget, n)} onClose={() => setEditTarget(null)} />}
-        {statDetail && <StatDetail sk={statDetail} state={state} onClose={() => setStatDetail(null)} isDesktop={isDesktop} onLevelTable={() => { const cfg = STAT_CONFIG[statDetail]; setLevelTable({ xp: state.statXP[statDetail], color: cfg.color, glow: cfg.glow, name: cfg.name }); }} />}
+        {editTarget && <EditNameModal currentName={editTarget.currentName} currentNotes={editTarget.notes || ""} onSave={(n, notes) => saveTaskName(editTarget, n, notes)} onClose={() => setEditTarget(null)} />}
+        {statDetail && <StatDetail sk={statDetail} state={state} onClose={() => setStatDetail(null)} isDesktop={isDesktop} tz={tz} onLevelTable={() => { const cfg = STAT_CONFIG[statDetail]; setLevelTable({ xp: state.statXP[statDetail], color: cfg.color, glow: cfg.glow, name: cfg.name }); }} />}
         {levelTable && <LevelTable currentXP={levelTable.xp} color={levelTable.color} glow={levelTable.glow} statName={levelTable.name} onClose={() => setLevelTable(null)} />}
+        {showTZModal && <TimezoneModal current={tz} onSave={(newTZ) => { setState(prev => ({ ...prev, timezone: newTZ })); setShowTZModal(false); toast$("Timezone updated", "#2979ff"); }} onClose={() => setShowTZModal(false)} />}
 
         {isDesktop && <DesktopSidebar />}
 
-        {/* Main content */}
         <div style={{ marginLeft: isDesktop ? SIDEBAR_W : 0, paddingBottom: isDesktop ? 48 : 80, position: "relative", zIndex: 1, minHeight: "100vh" }}>
           <div style={{ maxWidth: isDesktop ? 1040 : "100%", margin: isDesktop ? "0 auto" : "0" }}>
 
             {/* ══ DASHBOARD ═══════════════════════════════════════ */}
             {view === "dashboard" && (
               <div className="fade" style={{ padding: isDesktop ? "30px 36px 0" : "18px 14px 0" }}>
-
                 {isDesktop && (
                   <div style={{ marginBottom: 26, paddingBottom: 18, borderBottom: "1px solid rgba(255,255,255,.05)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                       <div>
                         <div style={{ fontFamily: "'Orbitron',monospace", fontSize: 22, fontWeight: 900, color: "#fff", letterSpacing: 2 }}>DASHBOARD</div>
-                        <div style={{ fontSize: 11, color: "#2a2a3a", fontFamily: "'Share Tech Mono',monospace", marginTop: 4 }}>{new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</div>
+                        <div style={{ fontSize: 11, color: "#2a2a3a", fontFamily: "'Share Tech Mono',monospace", marginTop: 4 }}>{new Date().toLocaleDateString("en-US", { timeZone: tz, weekday: "long", month: "long", day: "numeric", year: "numeric" })}</div>
                       </div>
                       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                         <div onClick={() => setView("sleep")} style={{ background: "rgba(255,64,129,.08)", border: "1px solid rgba(255,64,129,.2)", borderRadius: 7, padding: "8px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all .15s" }}>
@@ -1013,7 +1067,7 @@ export default function App() {
                       </div>
                       <div style={{ display: "flex", gap: 3 }}>
                         {[...statKeys, "sleep"].map((k, i) => {
-                          const fed = k === "sleep" ? !!sleepToday : (state.taskLog || []).some(t => t.date === today && t.stat === k && !t.isHabit);
+                          const fed = k === "sleep" ? !!sleepToday : (state.taskLog || []).some(t => t.date === todayActual && t.stat === k && !t.isHabit);
                           return <div key={i} style={{ flex: 1, height: 5, borderRadius: 2, background: fed ? "#2979ff" : "rgba(255,255,255,.06)", boxShadow: fed ? "0 0 5px #2979ff" : "none", transition: "all .3s" }} />;
                         })}
                       </div>
@@ -1028,6 +1082,13 @@ export default function App() {
                       </div>
                       <XPBar xp={state.statXP.will} color="#ffd600" glow="rgba(255,214,0,.5)" thin />
                     </div>
+                    {/* Mobile TZ button */}
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,.05)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <button onClick={() => setShowTZModal(true)} style={{ background: "transparent", border: "none", color: "#2a2a3a", cursor: "pointer", fontFamily: "'Share Tech Mono',monospace", fontSize: 9, padding: 0, display: "flex", alignItems: "center", gap: 5 }}>
+                        🌐 {tz.split("/")[1]?.replace("_", " ") || tz}
+                      </button>
+                      <div style={{ fontFamily: "'Share Tech Mono',monospace", fontSize: 9, color: "#222" }}>{todayActual}</div>
+                    </div>
                   </div>
                 )}
 
@@ -1036,7 +1097,7 @@ export default function App() {
                   <div style={{ background: "rgba(255,23,68,.06)", border: "1px solid rgba(255,23,68,.25)", borderRadius: 9, padding: "12px 14px", marginBottom: 14 }}>
                     <div style={{ fontSize: 9, color: "#ff1744", fontFamily: "'Orbitron',monospace", letterSpacing: 2, marginBottom: 8 }}>⚠ SYSTEM ALERT</div>
                     {decayAlerts.map(k => {
-                      const cfg = STAT_CONFIG[k], ds = decayStatus(k, state.lastActivity);
+                      const cfg = STAT_CONFIG[k], ds = decayStatus(k, state.lastActivity, tz);
                       return <div key={k} onClick={() => { setActiveStat(k); setView("tasks"); }} style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer", marginBottom: 5 }}>
                         <span style={{ fontSize: 14 }}>{cfg.icon}</span>
                         <span style={{ fontSize: 12, color: "#ccc", fontWeight: 600, flex: 1 }}>{cfg.name}</span>
@@ -1046,7 +1107,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Mobile sleep card */}
                 {!isDesktop && (
                   <div style={{ background: "#0d0d1a", border: "1px solid rgba(255,255,255,.07)", borderRadius: 9, padding: "12px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 18 }}>🌙</span>
@@ -1060,11 +1120,10 @@ export default function App() {
 
                 <div style={{ fontSize: 9, color: "#222", fontFamily: "'Orbitron',monospace", letterSpacing: 2, marginBottom: isDesktop ? 14 : 10 }}>── STATS {isDesktop ? "──────────────────────────────────────────" : "──────────────────"}</div>
 
-                {/* Stat grid */}
                 <div style={{ display: "grid", gridTemplateColumns: isDesktop ? "repeat(3,1fr)" : "1fr 1fr", gap: isDesktop ? 14 : 10 }}>
                   {statKeys.map(key => {
                     const cfg = STAT_CONFIG[key], xp = state.statXP[key], lvl = getLevel(xp);
-                    const ds = decayStatus(key, state.lastActivity);
+                    const ds = decayStatus(key, state.lastActivity, tz);
                     const dc = ds.status === "warn" ? "#ff8c00" : ds.status === "decay" ? "#ff1744" : "transparent";
                     return (
                       <div key={key} className="sc" style={{ background: "linear-gradient(135deg,#0d0d1a,#0a0a12)", border: `1px solid ${ds.status !== "safe" ? dc : "rgba(255,255,255,.07)"}`, borderRadius: 10, padding: isDesktop ? "20px" : "16px 14px", position: "relative", overflow: "hidden", boxShadow: ds.status !== "safe" ? `0 0 14px ${dc}33` : "none" }}>
@@ -1126,10 +1185,13 @@ export default function App() {
                                   const sel = rankSel[task.id] || task.rank;
                                   return (
                                     <div key={task.id} className="tr" style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", borderBottom: i < sp.length - 1 ? "1px solid rgba(255,255,255,.04)" : "none", transition: "background .14s" }}>
-                                      <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, color: "#bbb", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.name}</div></div>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontSize: 13, color: "#bbb", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.name}</div>
+                                        {task.notes && <div style={{ fontSize: 9, color: "#3a3a5a", fontFamily: "'Share Tech Mono',monospace", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📝 {task.notes}</div>}
+                                      </div>
                                       <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
                                         {["E", "B", "S"].map(r => <RP key={r} rank={r} sel={sel === r} onClick={() => setRankSel(p => ({ ...p, [task.id]: r }))} />)}
-                                        <button className="pb" onClick={() => completeTask(task.id, task.name, key, sel, task.isCustom || false)} style={{ background: `linear-gradient(135deg,${cfg.color}99,${cfg.color})`, color: "#000", border: "none", borderRadius: 5, padding: "6px 12px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 9, fontWeight: 700, boxShadow: `0 0 7px ${cfg.glow}`, marginLeft: 2 }}>+{TASK_XP[sel]}</button>
+                                        <button className="pb" onClick={() => completeTask(task.id, task.name, key, sel, task.isCustom || false, task.notes)} style={{ background: `linear-gradient(135deg,${cfg.color}99,${cfg.color})`, color: "#000", border: "none", borderRadius: 5, padding: "6px 12px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 9, fontWeight: 700, boxShadow: `0 0 7px ${cfg.glow}`, marginLeft: 2 }}>+{TASK_XP[sel]}</button>
                                       </div>
                                     </div>
                                   );
@@ -1158,6 +1220,16 @@ export default function App() {
                   {!isDesktop && <button onClick={() => setView("dashboard")} style={{ background: "transparent", border: "none", color: "#444", cursor: "pointer", fontSize: 13, marginBottom: 14, display: "flex", alignItems: "center", gap: 5, fontFamily: "'Rajdhani',sans-serif" }}>← Back</button>}
                   {isDesktop && <button onClick={() => setView("dashboard")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,.08)", color: "#555", cursor: "pointer", fontSize: 10, marginBottom: 22, display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "'Orbitron',monospace", letterSpacing: .5, padding: "6px 14px", borderRadius: 5 }}>← BACK TO DASHBOARD</button>}
 
+                  {/* Date selector for past-day editing */}
+                  <div style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 8, padding: "10px 14px", marginBottom: 16 }}>
+                    <DateSelector selectedDate={activeDate} onChange={setSelectedDate} tz={tz} color={cfg.color} />
+                    {isEditingPast && (
+                      <div style={{ fontSize: 10, color: "#ff8c00", fontFamily: "'Share Tech Mono',monospace", marginTop: 8, lineHeight: 1.5 }}>
+                        ⏪ Logging to <span style={{ color: "#fff" }}>{activeDate}</span>. XP still counts — use this to fix missed logs due to timezone issues.
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{ background: `linear-gradient(135deg,${cfg.color}0e,#0a0a12)`, border: `1px solid ${cfg.color}30`, borderRadius: 12, padding: isDesktop ? "20px" : "16px", marginBottom: 18, boxShadow: `0 0 18px ${cfg.glow}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                       <span style={{ fontSize: 22 }}>{cfg.icon}</span>
@@ -1177,7 +1249,7 @@ export default function App() {
                     <XPBar xp={state.statXP[activeStat]} color={cfg.color} glow={cfg.glow} thin={false} />
                     <div style={{ marginTop: 8, fontSize: 11, color: "#555", fontFamily: "'Share Tech Mono',monospace", fontStyle: "italic" }}>{STAT_DESCRIPTIONS[activeStat]}</div>
                     <div style={{ marginTop: 6, fontSize: 9, color: "#2a2a3a", fontFamily: "'Share Tech Mono',monospace" }}>
-                      Last: {state.lastActivity[activeStat] ? `${daysSince(state.lastActivity[activeStat])}d ago` : "Never"} · {(() => { const ds = decayStatus(activeStat, state.lastActivity); return ds.status === "safe" ? <span style={{ color: "#00e676" }}>✓ Safe {ds.daysLeft}d</span> : ds.status === "warn" ? <span style={{ color: "#ff8c00" }}>⚠ Decay tomorrow</span> : <span style={{ color: "#ff1744" }}>▼ Decaying</span>; })()}
+                      Last: {state.lastActivity[activeStat] ? `${daysSinceTZ(state.lastActivity[activeStat], tz)}d ago` : "Never"} · {(() => { const ds = decayStatus(activeStat, state.lastActivity, tz); return ds.status === "safe" ? <span style={{ color: "#00e676" }}>✓ Safe {ds.daysLeft}d</span> : ds.status === "warn" ? <span style={{ color: "#ff8c00" }}>⚠ Decay tomorrow</span> : <span style={{ color: "#ff1744" }}>▼ Decaying</span>; })()}
                     </div>
                   </div>
 
@@ -1191,19 +1263,24 @@ export default function App() {
                             const sel = rankSel[task.id] || task.rank;
                             return (
                               <div key={task.id} className="tr" style={{ background: "#0d0d1a", border: "1px solid rgba(255,255,255,.07)", borderRadius: 9, padding: "13px 14px", transition: "background .14s" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 9, marginBottom: 11 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 9, marginBottom: 8 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 14, color: "#ccc", fontWeight: 600, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.name}</div>
                                     {task.isCustom && <div style={{ fontSize: 9, color: "#2a2a3a", fontFamily: "'Orbitron',monospace", marginTop: 1 }}>CUSTOM</div>}
+                                    {task.notes && (
+                                      <div style={{ fontSize: 10, color: "#3a3a5a", fontFamily: "'Share Tech Mono',monospace", marginTop: 5, lineHeight: 1.5, background: "rgba(255,255,255,.02)", borderLeft: `2px solid ${cfg.color}44`, paddingLeft: 8, paddingTop: 3, paddingBottom: 3 }}>
+                                        {task.notes}
+                                      </div>
+                                    )}
                                   </div>
                                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                                    <button onClick={() => setEditTarget({ id: task.id, currentName: task.name, isCustom: task.isCustom, isHabit: false })} style={{ background: "transparent", border: "none", color: "#2a2a3a", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1 }}>✏️</button>
+                                    <button onClick={() => setEditTarget({ id: task.id, currentName: task.name, notes: task.notes || "", isCustom: task.isCustom, isHabit: false })} style={{ background: "transparent", border: "none", color: "#2a2a3a", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1 }}>✏️</button>
                                     <button onClick={() => deleteTask(task)} style={{ background: "transparent", border: "none", color: "#2a2a3a", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1 }}>🗑</button>
                                   </div>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                                   <div style={{ display: "flex", gap: 5 }}>{["E", "B", "S"].map(r => <RP key={r} rank={r} sel={sel === r} onClick={() => setRankSel(p => ({ ...p, [task.id]: r }))} />)}</div>
-                                  <button className="pb" onClick={() => completeTask(task.id, task.name, activeStat, sel, task.isCustom || false)} style={{ background: `linear-gradient(135deg,${cfg.color}99,${cfg.color})`, color: "#000", border: "none", borderRadius: 5, padding: "7px 15px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700, letterSpacing: 1, boxShadow: `0 0 9px ${cfg.glow}`, flexShrink: 0 }}>+{TASK_XP[sel]} XP</button>
+                                  <button className="pb" onClick={() => completeTask(task.id, task.name, activeStat, sel, task.isCustom || false, task.notes)} style={{ background: `linear-gradient(135deg,${cfg.color}99,${cfg.color})`, color: "#000", border: "none", borderRadius: 5, padding: "7px 15px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 10, fontWeight: 700, letterSpacing: 1, boxShadow: `0 0 9px ${cfg.glow}`, flexShrink: 0 }}>+{TASK_XP[sel]} XP</button>
                                 </div>
                               </div>
                             );
@@ -1238,17 +1315,22 @@ export default function App() {
                       {habits.length > 0 && (
                         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 14 }}>
                           {habits.map(habit => {
-                            const countToday = habitCountToday(habit.id);
+                            const countToday = habitCountActiveDate(habit.id);
                             const isPopping = (habitPops[habit.id] || 0) > 0;
                             return (
                               <div key={habit.id} style={{ background: "#0d0d1a", border: "1px solid rgba(255,214,0,.15)", borderRadius: 10, padding: "14px 15px" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 12 }}>
+                                <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginBottom: 10 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 14, color: "#ddd", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{habit.name}</div>
                                     <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
                                       <span style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, color: "#ffd600", letterSpacing: .5 }}>{habit.rank}-RANK · +{TASK_XP[habit.rank]} XP</span>
                                       {countToday > 0 && <span style={{ fontFamily: "'Orbitron',monospace", fontSize: 9, color: "#ffd600", background: "rgba(255,214,0,.12)", border: "1px solid rgba(255,214,0,.25)", borderRadius: 10, padding: "2px 8px", animation: isPopping ? "pop .25s" : "none" }}>×{countToday} today</span>}
                                     </div>
+                                    {habit.notes && (
+                                      <div style={{ fontSize: 10, color: "#3a3a5a", fontFamily: "'Share Tech Mono',monospace", marginTop: 6, lineHeight: 1.5, background: "rgba(255,214,0,.04)", borderLeft: "2px solid rgba(255,214,0,.25)", paddingLeft: 8, paddingTop: 3, paddingBottom: 3 }}>
+                                        {habit.notes}
+                                      </div>
+                                    )}
                                   </div>
                                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                                     <button onClick={() => setEditTarget({ ...habit, currentName: habit.name })} style={{ background: "transparent", border: "none", color: "#2a2a3a", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1 }}>✏️</button>
@@ -1281,9 +1363,20 @@ export default function App() {
                 {isDesktop && <button onClick={() => setView("dashboard")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,.08)", color: "#555", cursor: "pointer", fontSize: 10, marginBottom: 26, display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "'Orbitron',monospace", letterSpacing: .5, padding: "6px 14px", borderRadius: 5 }}>← BACK TO DASHBOARD</button>}
                 <div style={{ maxWidth: isDesktop ? 540 : "100%" }}>
                   <div style={{ fontFamily: "'Orbitron',monospace", fontSize: isDesktop ? 20 : 15, fontWeight: 700, color: "#fff", letterSpacing: 2, marginBottom: 4 }}>🌙 SLEEP LOG</div>
-                  <div style={{ fontSize: 10, color: "#333", fontFamily: "'Share Tech Mono',monospace", marginBottom: 22 }}>Adds XP to Health · resets daily</div>
+                  <div style={{ fontSize: 10, color: "#333", fontFamily: "'Share Tech Mono',monospace", marginBottom: 16 }}>Adds XP to Health · resets daily</div>
+
+                  {/* Date selector for sleep */}
+                  <div style={{ background: "rgba(255,255,255,.02)", border: "1px solid rgba(255,255,255,.07)", borderRadius: 8, padding: "10px 14px", marginBottom: 16 }}>
+                    <DateSelector selectedDate={activeDate} onChange={setSelectedDate} tz={tz} color="#ff4081" />
+                    {sleepActiveDate && (
+                      <div style={{ marginTop: 8, fontSize: 10, color: "#ff4081", fontFamily: "'Share Tech Mono',monospace" }}>
+                        ✓ {activeDate === todayActual ? "Today" : activeDate}: {sleepActiveDate.hours}h logged · +{sleepActiveDate.xp} XP
+                      </div>
+                    )}
+                  </div>
+
                   <div style={{ background: "#0d0d1a", border: "1px solid rgba(255,255,255,.07)", borderRadius: 11, padding: "20px", marginBottom: 14 }}>
-                    <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 10 }}>HOURS SLEPT</div>
+                    <div style={{ fontSize: 10, color: "#444", fontFamily: "'Orbitron',monospace", letterSpacing: 1, marginBottom: 10 }}>HOURS SLEPT {isEditingPast ? <span style={{ color: "#ff8c00" }}>· {activeDate}</span> : ""}</div>
                     <input type="number" min="0" max="24" step="0.5" value={sleepInput} onChange={e => setSleepInput(e.target.value)} placeholder="e.g. 7.5"
                       style={{ width: "100%", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.09)", borderRadius: 7, color: "#fff", padding: "14px 15px", fontFamily: "'Orbitron',monospace", fontSize: 24, textAlign: "center", outline: "none" }} />
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginTop: 14 }}>
@@ -1295,13 +1388,15 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-                  <button className="pb" onClick={logSleep} style={{ width: "100%", background: "linear-gradient(135deg,#2979ff99,#2979ff)", color: "#fff", border: "none", borderRadius: 9, padding: "14px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 12, fontWeight: 700, letterSpacing: 2, boxShadow: "0 0 18px rgba(41,121,255,.3)" }}>LOG SLEEP</button>
-                  {sleepToday && <div style={{ textAlign: "center", marginTop: 12, fontSize: 10, color: "#00e676", fontFamily: "'Share Tech Mono',monospace" }}>✓ Today: {sleepToday.hours}h · +{sleepToday.xp} Health XP</div>}
+                  <button className="pb" onClick={logSleep} style={{ width: "100%", background: "linear-gradient(135deg,#2979ff99,#2979ff)", color: "#fff", border: "none", borderRadius: 9, padding: "14px", cursor: "pointer", fontFamily: "'Orbitron',monospace", fontSize: 12, fontWeight: 700, letterSpacing: 2, boxShadow: "0 0 18px rgba(41,121,255,.3)" }}>
+                    {isEditingPast ? `LOG SLEEP FOR ${activeDate}` : "LOG SLEEP"}
+                  </button>
+                  {sleepToday && activeDate === todayActual && <div style={{ textAlign: "center", marginTop: 12, fontSize: 10, color: "#00e676", fontFamily: "'Share Tech Mono',monospace" }}>✓ Today: {sleepToday.hours}h · +{sleepToday.xp} Health XP</div>}
                 </div>
               </div>
             )}
 
-            {view === "archive" && <Archive taskLog={state.taskLog} sleepLog={state.sleepLog} isDesktop={isDesktop} />}
+            {view === "archive" && <Archive taskLog={state.taskLog} sleepLog={state.sleepLog} isDesktop={isDesktop} tz={tz} />}
           </div>
         </div>
 
